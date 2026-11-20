@@ -34,6 +34,11 @@ class Scene:
         self.open_quote, self.close_quote = rng.choices([("“", "”"), ("「", "」")], weights=[85, 15])[0]
         self.paragraphs: list[str] = []
         self.labels: list[tuple[str, str]] = []
+        # Web novels put nearly every sentence in its own paragraph, so the words that say who
+        # is speaking sit in the paragraph before or after the quote. Printed novels keep them
+        # together. Half the scenes are written each way.
+        self.one_sentence_paragraphs = rng.random() < 0.5
+        self.last_speaker: dict | None = None
         self.cast = [self.new_character() for _ in range(rng.choice([2, 2, 2, 3, 3, 4]))]
         self.names = [c["name"] for c in self.cast]
 
@@ -70,9 +75,19 @@ class Scene:
 
     def narration(self) -> str:
         rng = self.rng
-        if rng.random() < 0.4:
-            return f"{self.ref(rng.choice(self.cast))}{rng.choice(pools.ACTIONS)}。"
+        # With a quote alone in its paragraph, a sentence about somebody right after it reads
+        # as "that is who spoke". So there, only the person who just spoke may be mentioned.
+        about = self.last_speaker if self.one_sentence_paragraphs else rng.choice(self.cast)
+        if about and rng.random() < 0.4:
+            return f"{self.ref(about)}{rng.choice(pools.ACTIONS)}。"
         return rng.choice(pools.NARRATION)
+
+    def emit(self, parts: list[str]) -> None:
+        """One turn, as a single paragraph or as one paragraph per part."""
+        if self.one_sentence_paragraphs:
+            self.paragraphs.extend(parts)
+        else:
+            self.paragraphs.append("".join(parts))
 
     # ---- one turn of talk, in one of the ways novels write it ----
     def tagged_turn(self, person: dict, other: dict) -> None:
@@ -83,46 +98,45 @@ class Scene:
         text = self.line(emotion, address)
         pre = rng.choice(pools.EMOTION_PRE[emotion]) if emotion != NEUTRAL else rng.choice(pools.SAY)
         post = rng.choice(pools.EMOTION_POST[emotion]) if emotion != NEUTRAL else rng.choice(pools.SAY_POST)
-        form = rng.choices(
-            ["pre", "post", "mid", "action", "pronoun", "trap", "thought"], weights=[30, 24, 8, 12, 8, 8, 10]
-        )[0]
+        action = rng.choice(pools.ACTIONS)
+        forms = ["pre", "post", "mid", "action", "pronoun", "trap", "thought"]
+        form = rng.choices(forms, weights=[30, 24, 8, 12, 8, 8, 10])[0]
         if form == "pre":
-            para = f"{who}{pre}：{self.say(name, emotion, text)}"
+            parts = [f"{who}{pre}：", self.say(name, emotion, text)]
             if rng.random() < 0.25:
-                para += rng.choice(pools.NARRATION)
+                parts.append(rng.choice(pools.NARRATION))
         elif form == "post":
-            para = f"{self.say(name, emotion, text)}{who}{post}。"
+            parts = [self.say(name, emotion, text), f"{who}{post}。"]
         elif form == "mid":
             first, second = self.line(emotion, address).rstrip("。！？…") + "，", self.line(emotion)
             verb = pre.rstrip("，说问道")
-            para = f"{self.say(name, emotion, first)}{who}{verb}，{self.say(name, emotion, second)}"
+            parts = [self.say(name, emotion, first), f"{who}{verb}，", self.say(name, emotion, second)]
         elif form == "action":  # an action sentence, then the quote, no speech verb at all
             emotion, text = NEUTRAL, self.line(NEUTRAL, address)
-            para = f"{who}{rng.choice(pools.ACTIONS)}。{self.say(name, emotion, text)}"
+            parts = [f"{who}{action}。", self.say(name, emotion, text)]
         elif form == "pronoun":
-            para = (
-                f"{who}{rng.choice(pools.ACTIONS)}，{person['pronoun']}{pre}：{self.say(name, emotion, text)}"
-            )
+            parts = [f"{who}{action}，{person['pronoun']}{pre}：", self.say(name, emotion, text)]
         elif form == "trap":  # someone else is mentioned first; the tag after the quote decides
-            para = (
-                f"{self.ref(other)}{rng.choice(pools.ACTIONS)}。{self.say(name, emotion, text)}{who}{post}。"
-            )
+            parts = [f"{self.ref(other)}{action}。", self.say(name, emotion, text), f"{who}{post}。"]
         else:  # a thought counts as that character speaking, neutrally
             text = self.line(NEUTRAL)
             if rng.random() < 0.5:
-                para = f"{who}{rng.choice(pools.THOUGHT_PRE)}：{self.say(name, NEUTRAL, text)}"
+                parts = [f"{who}{rng.choice(pools.THOUGHT_PRE)}：", self.say(name, NEUTRAL, text)]
             else:
-                para = f"{self.say(name, NEUTRAL, text)}{who}{rng.choice(pools.THOUGHT_POST)}。"
-        self.paragraphs.append(para)
+                parts = [self.say(name, NEUTRAL, text), f"{who}{rng.choice(pools.THOUGHT_POST)}。"]
+        self.emit(parts)
+        self.last_speaker = person
 
     def bare_turn(self, person: dict) -> None:
         """A quote alone in its paragraph: the speakers are taking turns."""
         self.paragraphs.append(self.say(person["name"], NEUTRAL, self.line(NEUTRAL)))
+        self.last_speaker = person
 
     def interruption(self) -> None:
         """Something other than the main characters speaks; turn-taking starts over afterwards."""
         rng = self.rng
         kind = rng.choices(["group", "unnamed", "sound", "system"], weights=[35, 35, 20, 10])[0]
+        self.last_speaker = None
         if kind == "group":
             group = rng.choice(pools.GROUPS)
             self.paragraphs.append(f"{group}{rng.choice(pools.GROUP_VERBS)}。")
@@ -134,13 +148,13 @@ class Scene:
             emotion = rng.choice(FEELINGS) if rng.random() < 0.3 else NEUTRAL
             tag = rng.choice(pools.EMOTION_PRE[emotion]) if emotion != NEUTRAL else rng.choice(pools.SAY)
             article = rng.choice(["一个", "一名", "那个", "旁边的", ""])
-            self.paragraphs.append(f"{article}{who}{tag}：{self.say(who, emotion, self.line(emotion))}")
+            self.emit([f"{article}{who}{tag}：", self.say(who, emotion, self.line(emotion))])
         elif kind == "sound":
             sound = self.say(NARRATOR, NEUTRAL, rng.choice(pools.SOUNDS))
             self.paragraphs.extend(rng.sample([sound, rng.choice(pools.SOUND_NARRATION)], 2))
         else:
             tag = rng.choice(["系统的提示音响起：", "系统冰冷的声音在脑海里响起：", "耳边传来系统的声音："])
-            self.paragraphs.append(f"{tag}{self.say(SYSTEM, NEUTRAL, rng.choice(pools.SYSTEM_LINES))}")
+            self.emit([tag, self.say(SYSTEM, NEUTRAL, rng.choice(pools.SYSTEM_LINES))])
 
     def write(self) -> None:
         rng = self.rng
@@ -187,12 +201,16 @@ def examples(seed: int) -> list[dict]:
     out = []
     for batch in label_batches(segments):
         roll = rng.random()
-        known = (
-            list(scene.names) if roll < 0.7 else rng.sample(scene.names, rng.randint(0, len(scene.names) - 1))
-        )
+        # The list must not give the answer away: at the start of a book it is empty.
+        if roll < 0.4:
+            known = list(scene.names)
+        elif roll < 0.7:
+            known = rng.sample(scene.names, rng.randint(1, len(scene.names) - 1))
+        else:
+            known = []
         if any(c["alias"] for c in scene.cast):
             known = list(scene.names)  # a title can only be resolved to a name that is known
-        known += [Scene(rng).names[0] for _ in range(rng.choice([0, 0, 1, 2]))]  # people not in this scene
+        known += [Scene(rng).names[0] for _ in range(rng.choice([0, 0, 1, 2, 3]))]  # people not in this scene
         rng.shuffle(known)
         prompt, numbers = label_request(segments, batch, known, SHORT_LABEL_PROMPT)
         answer = [{"id": n, "speaker": label_of[i][0], "emotion": label_of[i][1]} for i, n in numbers.items()]
