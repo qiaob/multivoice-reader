@@ -24,6 +24,8 @@ OUT = Path(__file__).parent / "data"
 NEUTRAL = "中性"
 FEELINGS = [e for e in EMOTIONS if e != NEUTRAL]
 SYSTEM = "系统"
+# Longer examples would be cut off in training and lose their answer (--max-seq-length in train.py).
+MAX_EXAMPLE_CHARS = 1500
 
 
 # Layout habits seen across real novels (finetune/profile_layout.py), as families a scene is
@@ -63,8 +65,8 @@ STYLES = {
         "bare": 0.08,
         "merge": 0.1,
         "before": (0, 0),
-        "after": (1, 4),
-        "narration": (2, 5),
+        "after": (1, 3),
+        "narration": (1, 3),
     },  # fmt: skip
     # Long paragraphs that end with the quote: ……他说："……"
     "quote_last": {
@@ -72,9 +74,9 @@ STYLES = {
         "forms": [55, 6, 5, 18, 8, 2, 6],
         "bare": 0.10,
         "merge": 0.15,
-        "before": (1, 3),
+        "before": (1, 2),
         "after": (0, 0),
-        "narration": (2, 4),
+        "narration": (1, 3),
     },  # fmt: skip
     # Several quotes to a paragraph.
     "several": {
@@ -158,7 +160,9 @@ class Scene:
         emotion = rng.choice(FEELINGS) if rng.random() < 0.35 else NEUTRAL
         name, who = person["name"], self.ref(person)
         address = other if rng.random() < 0.15 else None
-        text = self.line(emotion, address)
+        # Usually the words match the emotion; sometimes an ordinary sentence is shouted or
+        # sobbed, and then the narration alone carries it. So the words cannot be memorised.
+        text = self.line(NEUTRAL if rng.random() < 0.3 else emotion, address)
         pre = rng.choice(pools.EMOTION_PRE[emotion]) if emotion != NEUTRAL else rng.choice(pools.SAY)
         post = rng.choice(pools.EMOTION_POST[emotion]) if emotion != NEUTRAL else rng.choice(pools.SAY_POST)
         action = rng.choice(pools.ACTIONS)
@@ -305,13 +309,11 @@ def examples(seed: int) -> list[dict]:
         rng.shuffle(known)
         prompt, numbers = label_request(segments, batch, known, SHORT_LABEL_PROMPT)
         answer = [{"id": n, "speaker": label_of[i][0], "emotion": label_of[i][1]} for i, n in numbers.items()]
+        reply = json.dumps(answer, ensure_ascii=False)
+        if len(prompt) + len(reply) > MAX_EXAMPLE_CHARS:
+            continue
         out.append(
-            {
-                "messages": [
-                    {"role": "user", "content": prompt},
-                    {"role": "assistant", "content": json.dumps(answer, ensure_ascii=False)},
-                ]
-            }
+            {"messages": [{"role": "user", "content": prompt}, {"role": "assistant", "content": reply}]}
         )
     return out
 

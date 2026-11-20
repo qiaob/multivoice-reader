@@ -1,4 +1,13 @@
-"""Building blocks for synthetic scenes. Everything here was written for this project."""
+"""Building blocks for synthetic scenes. Everything here was written for this project.
+
+The lists below were written by hand. expand_pools.py has a local model write many more lines,
+narration sentences and actions into pools_generated.json; if that file exists it is added in
+at the bottom of this module.
+"""
+
+import json
+import re
+from pathlib import Path
 
 SURNAMES = list(
     "赵钱孙李周吴郑王冯陈褚卫蒋沈韩杨朱秦尤许何吕施张孔曹严华金魏陶姜戚谢邹喻柏水窦章云苏潘葛奚范彭郎鲁韦昌马苗凤花方俞任袁柳鲍史唐费廉岑薛雷贺倪汤滕殷罗毕郝邬安常乐于时傅皮卞齐康伍余元卜顾孟平黄和穆萧尹姚邵湛汪祁毛禹狄米贝明臧计伏成戴谈宋茅庞熊纪舒屈项祝董梁杜阮蓝闵席季麻强贾路娄危江童颜郭梅盛林刁钟徐邱骆高夏蔡田樊胡凌霍虞万支柯管卢莫房裘缪干解应宗丁宣邓郁单杭洪包诸左石崔吉龚程嵇邢滑裴陆荣翁荀羊甄曲家封储靳段富巫乌焦巴弓牧隗山谷车侯全班仰秋仲伊宫宁仇栾暴甘厉戎祖武符刘景詹束龙叶幸司韶黎蓟薄印宿白怀蒲邰从鄂索咸籍赖卓蔺屠蒙池乔阴胥能苍双闻莘党翟谭贡劳逄姬申扶堵冉宰郦雍璩桑桂濮牛寿通边扈燕冀郏浦尚农温别庄晏柴瞿阎充慕连茹习宦艾鱼容向古易慎戈廖庾终暨居衡步都耿满弘匡国文寇广禄阙东欧殳沃利蔚越夔隆师巩厍聂晁勾敖融冷訾辛阚那简饶空曾毋沙乜养鞠须丰巢关蒯相查后荆红游竺权逯盖益桓公"
@@ -758,3 +767,17 @@ NARRATION = [
     "话说到这里，气氛缓和了一些。",
     "事情就这样僵住了。",
 ]
+
+
+def _names_someone(action: str) -> bool:
+    """An action is written to follow a name; the model sometimes puts a name of its own in front."""
+    return action[0] in SURNAMES and re.match(r"^.{2,3}[盯看望走拿站坐说把将从向往朝对]", action) is not None
+
+
+_generated = Path(__file__).with_name("pools_generated.json")
+if _generated.exists():
+    _more = json.loads(_generated.read_text(encoding="utf-8"))
+    for _emotion, _lines in _more.get("lines", {}).items():
+        LINES[_emotion] = sorted(set(LINES[_emotion]) | set(_lines))
+    NARRATION = sorted(set(NARRATION) | set(_more.get("narration", [])))
+    ACTIONS = sorted(set(ACTIONS) | {a for a in _more.get("actions", []) if not _names_someone(a)})
