@@ -221,3 +221,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Voice audition output (generated audio)
+audition/out/
+
+# Local books used for testing
+books/
+
+# Training checkpoints; only the final adapter is kept
+finetune/adapter/0*_adapters.safetensors
+
+.DS_Store

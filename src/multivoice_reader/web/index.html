@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>朗读</title>
+<link rel="stylesheet" href="reader.css">
+<header class="top">
+  <h1>选角台</h1>
+  <nav class="tabs">
+    <a aria-current="page" href="/">朗读</a>
+    <a href="http://127.0.0.1:8765/#audition">声音试听</a>
+    <a href="http://127.0.0.1:8765/#clone">声音复刻</a>
+  </nav>
+  <span id="status" role="status"></span>
+</header>
+
+<main id="shelf" hidden>
+  <h2>打开一本小说</h2>
+  <p>选一个 txt 文件。分角色、选声音、合成语音都在这台电脑上完成，文件不会上传到别处。</p>
+  <label class="primary">选择 txt 文件<input type="file" id="bookFile" accept=".txt,text/plain" hidden></label>
+  <p id="shelfStatus" role="status"></p>
+  <div id="shelfBooks" hidden>
+    <h3>读过的</h3>
+    <ul id="bookList"></ul>
+  </div>
+</main>
+
+<main id="reader" hidden>
+  <nav id="chapters" aria-label="章节">
+    <h2 id="bookTitle"></h2>
+    <button type="button" class="link" id="changeBook">换一本</button>
+    <ol id="chapterList"></ol>
+  </nav>
+  <article id="page">
+    <h2 id="chapterTitle"></h2>
+    <p id="pageNote" role="status"></p>
+    <div id="text"></div>
+  </article>
+  <aside id="cast" aria-label="角色和声音">
+    <h2>谁用哪个声音</h2>
+    <p class="hint">声音是自动选的，可以改。改了之后，这个角色的台词会重新合成。</p>
+    <ul id="castList"></ul>
+  </aside>
+</main>
+
+<footer id="player" hidden>
+  <button type="button" id="prev" aria-label="上一句">上一句</button>
+  <button type="button" id="toggle" class="primary">播放</button>
+  <button type="button" id="next" aria-label="下一句">下一句</button>
+  <span id="where"></span>
+  <span id="ready"></span>
+  <label class="rate">语速
+    <select id="rate"><option value="1">正常</option><option value="1.25">快一点</option><option value="1.5">更快</option></select>
+  </label>
+</footer>
+<script src="reader.js"></script>
+</html>
