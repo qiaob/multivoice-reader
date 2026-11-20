@@ -1,18 +1,33 @@
 """Plain text in, chapters and speakable segments out. Rules only, no models."""
 
 import re
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-# "第12章 标题", "第十二回", optionally after a short volume name: "卷名 第12章 标题".
+# "第12章 标题", "第十二回", "第12章：标题", optionally after a short volume name: "卷名 第12章 标题".
 HEADING = re.compile(
-    r"^\s*(?:[^\s，。！？：“”]{1,12}\s+)?第\s*[0-9０-９零〇一二三四五六七八九十百千两]+\s*[章回节卷](?:\s.{0,40})?\s*$"
+    r"^\s*(?:[^\s，。！？：“”]{1,12}\s+)?第\s*[0-9０-９零〇一二三四五六七八九十百千两]+\s*[章回节卷]"
+    r"(?:[\s：:、．.—-]+.{0,40})?\s*$"
 )
-QUOTED = re.compile(r"“([^“”]*)”|「([^「」]*)」")
+# A line this long that recurs this often is not the story: it is a site's watermark.
+WATERMARK_MIN_CHARS, WATERMARK_MAX_CHARS = 8, 40
+WATERMARK_MIN_REPEATS = 10
+# The ways dialogue is quoted: curly quotes, corner brackets, and straight quotes, which
+# have no open and close forms and so are paired up in order within a paragraph.
+QUOTED = re.compile(r"“([^“”]*)”|「([^「」]*)」|『([^『』]*)』|\"([^\"]*)\"")
+
+
+def quoted_text(match: re.Match) -> str:
+    """What is between the quotation marks, whichever kind they are."""
+    return next(group for group in match.groups() if group is not None)
+
+
 SENTENCE_END = "。！？…!?"
 # What a quoted span ends with when it is speech rather than a quoted term in the narration.
 SPEECH_END = SENTENCE_END + "，、；—～~.,"
 FALLBACK_CHAPTER_CHARS = 3000
+FRONT_MATTER_MAX_CHARS = 6000  # more than this before the first heading is story, not a blurb
 NARRATION_CHARS = 70
 DIALOGUE_CHARS = 120
 
@@ -40,28 +55,49 @@ def read_text(path: Path) -> str:
     raise ValueError(f"认不出 {path.name} 的文字编码")
 
 
-def split_chapters(text: str) -> list[Chapter]:
-    """Split on chapter headings; text before the first heading (blurb, credits) is dropped.
+def _by_size(lines: list[str], label: str) -> list[Chapter]:
+    """Cut text that has no headings into pieces of roughly equal size at paragraph breaks."""
+    chapters: list[Chapter] = []
+    size = 0
+    for line in lines:
+        if not chapters or size >= FALLBACK_CHAPTER_CHARS:
+            chapters.append(Chapter(f"{label}第 {len(chapters) + 1} 段", []))
+            size = 0
+        chapters[-1].paragraphs.append(line)
+        size += len(line)
+    return chapters
 
-    A text without headings is cut into pieces of roughly equal size at paragraph breaks.
+
+def split_chapters(text: str) -> list[Chapter]:
+    """Split on chapter headings.
+
+    A little text before the first heading is a blurb or credits and is dropped. A lot of it
+    is story whose headings were not recognised, and is kept, cut by size. So is a text with
+    no headings at all.
     """
     lines = [line.strip() for line in text.splitlines()]
     lines = [line for line in lines if line]
+    repeats = Counter(
+        line
+        for line in lines
+        if WATERMARK_MIN_CHARS <= len(line) <= WATERMARK_MAX_CHARS and not QUOTED.search(line)
+    )
+    watermarks = {line for line, count in repeats.items() if count >= WATERMARK_MIN_REPEATS}
+    lines = [line for line in lines if line not in watermarks]
+    front: list[str] = []
     chapters: list[Chapter] = []
     for line in lines:
         if HEADING.match(line):
             chapters.append(Chapter(re.sub(r"\s+", " ", line), []))
         elif chapters:
             chapters[-1].paragraphs.append(line)
-    if chapters:
-        return [c for c in chapters if c.paragraphs]
-    size = 0
-    for line in lines:
-        if not chapters or size >= FALLBACK_CHAPTER_CHARS:
-            chapters.append(Chapter(f"第 {len(chapters) + 1} 段", []))
-            size = 0
-        chapters[-1].paragraphs.append(line)
-        size += len(line)
+        else:
+            front.append(line)
+    if not chapters:
+        return _by_size(front, "")
+    chapters = [c for c in chapters if c.paragraphs]
+    if sum(map(len, front)) > FRONT_MATTER_MAX_CHARS:
+        chapters = _by_size(front, "开头 ") + chapters
     return chapters
 
 
@@ -100,7 +136,7 @@ def split_segments(paragraphs: list[str]) -> list[Segment]:
             narration = ""
 
         for match in QUOTED.finditer(para):
-            inner = match.group(1) if match.group(1) is not None else match.group(2)
+            inner = quoted_text(match)
             narration += para[cursor : match.start()]
             cursor = match.end()
             if _is_speech(inner):

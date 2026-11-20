@@ -26,19 +26,88 @@ FEELINGS = [e for e in EMOTIONS if e != NEUTRAL]
 SYSTEM = "系统"
 
 
+# Layout habits seen across real novels (finetune/profile_layout.py), as families a scene is
+# drawn from.
+#   lone       how often a quote is a paragraph by itself, the speaker named above or below
+#   forms      when it is not, how the turn is written (weights for FORMS)
+#   bare       how often speakers simply take turns, with nothing naming them
+#   merge      how often a turn continues the previous paragraph
+#   before, after   narration sentences put in the turn's own paragraph (fewest, most)
+#   narration  sentences in a paragraph of pure narration (fewest, most)
+FORMS = ["pre", "post", "mid", "action", "pronoun", "trap", "thought"]
+STYLES = {
+    # Most quotes stand alone; otherwise 他说："……". Short paragraphs.
+    "web_lone": {
+        "lone": 0.75,
+        "forms": [60, 8, 4, 14, 6, 4, 4],
+        "bare": 0.45,
+        "merge": 0.0,
+        "before": (0, 0),
+        "after": (0, 0),
+        "narration": (1, 2),
+    },  # fmt: skip
+    # An even mix of all placements.
+    "web_mixed": {
+        "lone": 0.40,
+        "forms": [30, 30, 10, 10, 8, 6, 6],
+        "bare": 0.35,
+        "merge": 0.2,
+        "before": (0, 0),
+        "after": (0, 1),
+        "narration": (1, 2),
+    },  # fmt: skip
+    # Long paragraphs that open with the quote: "……"他说。然后……
+    "quote_first": {
+        "lone": 0.05,
+        "forms": [8, 70, 8, 4, 2, 4, 4],
+        "bare": 0.08,
+        "merge": 0.1,
+        "before": (0, 0),
+        "after": (1, 4),
+        "narration": (2, 5),
+    },  # fmt: skip
+    # Long paragraphs that end with the quote: ……他说："……"
+    "quote_last": {
+        "lone": 0.10,
+        "forms": [55, 6, 5, 18, 8, 2, 6],
+        "bare": 0.10,
+        "merge": 0.15,
+        "before": (1, 3),
+        "after": (0, 0),
+        "narration": (2, 4),
+    },  # fmt: skip
+    # Several quotes to a paragraph.
+    "several": {
+        "lone": 0.12,
+        "forms": [30, 25, 15, 10, 8, 6, 6],
+        "bare": 0.15,
+        "merge": 0.75,
+        "before": (0, 0),
+        "after": (0, 1),
+        "narration": (1, 3),
+    },  # fmt: skip
+}
+STYLE_WEIGHTS = [25, 20, 18, 17, 20]
+
+
 class Scene:
-    """A short scene under construction: its paragraphs, and who says each quote in order."""
+    """A short scene under construction: its paragraphs, and who says each quote in order.
+
+    Books differ a great deal in how they lay dialogue out (see profile_layout.py): in some
+    web novels four quotes in five stand alone as a paragraph, in others most sit inside a
+    longer paragraph, several to a paragraph. So each scene draws its own habits.
+    """
 
     def __init__(self, rng: random.Random):
         self.rng = rng
-        self.open_quote, self.close_quote = rng.choices([("“", "”"), ("「", "」")], weights=[85, 15])[0]
+        marks = [("“", "”"), ('"', '"'), ("「", "」"), ("『", "』")]
+        self.open_quote, self.close_quote = rng.choices(marks, weights=[55, 30, 12, 3])[0]
+        self.style = STYLES[rng.choices(list(STYLES), weights=STYLE_WEIGHTS)[0]]
+        # Narration paragraphs between turns, on average.
+        self.narration_rate = rng.choice([0.3, 1.0, 2.0])
         self.paragraphs: list[str] = []
         self.labels: list[tuple[str, str]] = []
-        # Web novels put nearly every sentence in its own paragraph, so the words that say who
-        # is speaking sit in the paragraph before or after the quote. Printed novels keep them
-        # together. Half the scenes are written each way.
-        self.one_sentence_paragraphs = rng.random() < 0.5
-        self.last_speaker: dict | None = None
+        self.mergeable = False  # the last paragraph is a turn and may take another
         self.cast = [self.new_character() for _ in range(rng.choice([2, 2, 2, 3, 3, 4]))]
         self.names = [c["name"] for c in self.cast]
 
@@ -73,21 +142,15 @@ class Scene:
         self.labels.append((speaker, emotion))
         return self.quote(text)
 
-    def narration(self) -> str:
+    def narrate(self) -> None:
+        """A paragraph of narration that names nobody, so it cannot be read as naming a speaker."""
         rng = self.rng
-        # With a quote alone in its paragraph, a sentence about somebody right after it reads
-        # as "that is who spoke". So there, only the person who just spoke may be mentioned.
-        about = self.last_speaker if self.one_sentence_paragraphs else rng.choice(self.cast)
-        if about and rng.random() < 0.4:
-            return f"{self.ref(about)}{rng.choice(pools.ACTIONS)}。"
-        return rng.choice(pools.NARRATION)
+        self.paragraphs.append("".join(rng.sample(pools.NARRATION, rng.randint(*self.style["narration"]))))
+        self.mergeable = False
 
-    def emit(self, parts: list[str]) -> None:
-        """One turn, as a single paragraph or as one paragraph per part."""
-        if self.one_sentence_paragraphs:
-            self.paragraphs.extend(parts)
-        else:
-            self.paragraphs.append("".join(parts))
+    def paragraph(self, text: str, mergeable: bool = False) -> None:
+        self.paragraphs.append(text)
+        self.mergeable = mergeable
 
     # ---- one turn of talk, in one of the ways novels write it ----
     def tagged_turn(self, person: dict, other: dict) -> None:
@@ -99,71 +162,99 @@ class Scene:
         pre = rng.choice(pools.EMOTION_PRE[emotion]) if emotion != NEUTRAL else rng.choice(pools.SAY)
         post = rng.choice(pools.EMOTION_POST[emotion]) if emotion != NEUTRAL else rng.choice(pools.SAY_POST)
         action = rng.choice(pools.ACTIONS)
-        forms = ["pre", "post", "mid", "action", "pronoun", "trap", "thought"]
-        form = rng.choices(forms, weights=[30, 24, 8, 12, 8, 8, 10])[0]
+        if rng.random() < self.style["lone"]:
+            # The quote is a paragraph by itself; a sentence above or below says whose it is.
+            form = rng.choices(["above", "below", "trap", "colon"], weights=[42, 42, 12, 4])[0]
+            if form == "above":
+                cue = post if emotion != NEUTRAL else action
+                self.paragraph(f"{who}{cue}。")
+                self.paragraph(self.say(name, emotion, text))
+            elif form == "below":
+                self.paragraph(self.say(name, emotion, text))
+                self.paragraph(f"{who}{post}。")
+            elif form == "trap":  # someone else acts first; the sentence after the quote decides
+                self.paragraph(f"{self.ref(other)}{action}。")
+                self.paragraph(self.say(name, emotion, text))
+                self.paragraph(f"{who}{post}。")
+            else:
+                self.paragraph(f"{who}{pre}：")
+                self.paragraph(self.say(name, emotion, text))
+            return
+        form = rng.choices(FORMS, weights=self.style["forms"])[0]
         if form == "pre":
-            parts = [f"{who}{pre}：", self.say(name, emotion, text)]
+            turn = f"{who}{pre}：{self.say(name, emotion, text)}"
             if rng.random() < 0.25:
-                parts.append(rng.choice(pools.NARRATION))
+                turn += rng.choice(pools.NARRATION)
         elif form == "post":
-            parts = [self.say(name, emotion, text), f"{who}{post}。"]
+            turn = f"{self.say(name, emotion, text)}{who}{post}。"
         elif form == "mid":
             first, second = self.line(emotion, address).rstrip("。！？…") + "，", self.line(emotion)
             verb = pre.rstrip("，说问道")
-            parts = [self.say(name, emotion, first), f"{who}{verb}，", self.say(name, emotion, second)]
+            turn = f"{self.say(name, emotion, first)}{who}{verb}，{self.say(name, emotion, second)}"
         elif form == "action":  # an action sentence, then the quote, no speech verb at all
             emotion, text = NEUTRAL, self.line(NEUTRAL, address)
-            parts = [f"{who}{action}。", self.say(name, emotion, text)]
+            turn = f"{who}{action}。{self.say(name, emotion, text)}"
         elif form == "pronoun":
-            parts = [f"{who}{action}，{person['pronoun']}{pre}：", self.say(name, emotion, text)]
+            turn = f"{who}{action}，{person['pronoun']}{pre}：{self.say(name, emotion, text)}"
         elif form == "trap":  # someone else is mentioned first; the tag after the quote decides
-            parts = [f"{self.ref(other)}{action}。", self.say(name, emotion, text), f"{who}{post}。"]
+            turn = f"{self.ref(other)}{action}。{self.say(name, emotion, text)}{who}{post}。"
         else:  # a thought counts as that character speaking, neutrally
             text = self.line(NEUTRAL)
             if rng.random() < 0.5:
-                parts = [f"{who}{rng.choice(pools.THOUGHT_PRE)}：", self.say(name, NEUTRAL, text)]
+                turn = f"{who}{rng.choice(pools.THOUGHT_PRE)}：{self.say(name, NEUTRAL, text)}"
             else:
-                parts = [self.say(name, NEUTRAL, text), f"{who}{rng.choice(pools.THOUGHT_POST)}。"]
-        self.emit(parts)
-        self.last_speaker = person
+                turn = f"{self.say(name, NEUTRAL, text)}{who}{rng.choice(pools.THOUGHT_POST)}。"
+        turn = "".join(rng.sample(pools.NARRATION, rng.randint(*self.style["before"]))) + turn
+        turn += "".join(rng.sample(pools.NARRATION, rng.randint(*self.style["after"])))
+        # Two quotes may share a paragraph only with narration between them; touching, they
+        # would read as one speaker carrying on.
+        touching = self.paragraphs and self.paragraphs[-1].endswith(self.close_quote)
+        touching = touching and turn.startswith(self.open_quote)
+        if self.mergeable and not touching and rng.random() < self.style["merge"]:
+            self.paragraphs[-1] += turn
+        else:
+            self.paragraph(turn, mergeable=True)
 
     def bare_turn(self, person: dict) -> None:
         """A quote alone in its paragraph: the speakers are taking turns."""
-        self.paragraphs.append(self.say(person["name"], NEUTRAL, self.line(NEUTRAL)))
-        self.last_speaker = person
+        self.paragraph(self.say(person["name"], NEUTRAL, self.line(NEUTRAL)))
 
     def interruption(self) -> None:
         """Something other than the main characters speaks; turn-taking starts over afterwards."""
         rng = self.rng
         kind = rng.choices(["group", "unnamed", "sound", "system"], weights=[35, 35, 20, 10])[0]
-        self.last_speaker = None
         if kind == "group":
             group = rng.choice(pools.GROUPS)
-            self.paragraphs.append(f"{group}{rng.choice(pools.GROUP_VERBS)}。")
+            self.paragraph(f"{group}{rng.choice(pools.GROUP_VERBS)}。")
             for _ in range(rng.randint(2, 4)):
                 emotion = rng.choice([NEUTRAL, NEUTRAL, "惊讶"])
-                self.paragraphs.append(self.say(group, emotion, self.line(emotion)))
+                self.paragraph(self.say(group, emotion, self.line(emotion)))
         elif kind == "unnamed":
             who = rng.choice(pools.UNNAMED)
             emotion = rng.choice(FEELINGS) if rng.random() < 0.3 else NEUTRAL
             tag = rng.choice(pools.EMOTION_PRE[emotion]) if emotion != NEUTRAL else rng.choice(pools.SAY)
             article = rng.choice(["一个", "一名", "那个", "旁边的", ""])
-            self.emit([f"{article}{who}{tag}：", self.say(who, emotion, self.line(emotion))])
+            self.paragraph(f"{article}{who}{tag}：{self.say(who, emotion, self.line(emotion))}")
         elif kind == "sound":
             sound = self.say(NARRATOR, NEUTRAL, rng.choice(pools.SOUNDS))
-            self.paragraphs.extend(rng.sample([sound, rng.choice(pools.SOUND_NARRATION)], 2))
+            for text in rng.sample([sound, rng.choice(pools.SOUND_NARRATION)], 2):
+                self.paragraph(text)
         else:
             tag = rng.choice(["系统的提示音响起：", "系统冰冷的声音在脑海里响起：", "耳边传来系统的声音："])
-            self.emit([tag, self.say(SYSTEM, NEUTRAL, rng.choice(pools.SYSTEM_LINES))])
+            self.paragraph(f"{tag}{self.say(SYSTEM, NEUTRAL, rng.choice(pools.SYSTEM_LINES))}")
+
+    def between_turns(self) -> None:
+        rate = self.narration_rate
+        for _ in range(int(rate) + (self.rng.random() < rate - int(rate))):
+            self.narrate()
 
     def write(self) -> None:
         rng = self.rng
         if rng.random() < 0.2:  # establish a title for one character, used in place of the name later
             person = rng.choice(self.cast)
             person["alias"] = person["surname"] + rng.choice(pools.TITLES)
-            self.paragraphs.append(f"{person['alias']}{person['name']}{rng.choice(pools.ACTIONS)}。")
-        for _ in range(rng.randint(0, 2)):
-            self.paragraphs.append(self.narration())
+            self.paragraph(f"{person['alias']}{person['name']}{rng.choice(pools.ACTIONS)}。")
+        self.narrate()
         a, b = rng.sample(self.cast, 2)
         bare_run, tagged_since_reset = 0, 0
         for _ in range(rng.randint(5, 13)):
@@ -176,17 +267,17 @@ class Scene:
                 self.tagged_turn(b, a)
                 a, b = b, a
                 bare_run, tagged_since_reset = 0, 1
-            elif tagged_since_reset >= 2 and bare_run < 3 and roll < 0.55:
+            elif tagged_since_reset >= 2 and bare_run < 3 and rng.random() < self.style["bare"]:
                 self.bare_turn(a)
                 a, b = b, a
                 bare_run += 1
+                continue  # turn-taking only reads as such when nothing comes between the quotes
             else:
                 self.tagged_turn(a, b)
                 a, b = b, a
                 bare_run = 0
                 tagged_since_reset += 1
-            if rng.random() < 0.22:
-                self.paragraphs.append(self.narration())
+            self.between_turns()
 
 
 def examples(seed: int) -> list[dict]:

@@ -52,7 +52,7 @@ def main() -> None:
         "--batch-size": args.batch_size,
         "--learning-rate": args.learning_rate,
         "--num-layers": 8,  # attention maps for every layer at once do not fit in 16 GB
-        "--max-seq-length": 768,
+        "--max-seq-length": 1536,  # the longest examples are about 1600 characters; shorter cuts off answers
         "--steps-per-report": 50,
         "--steps-per-eval": 500,
         "--val-batches": 25,

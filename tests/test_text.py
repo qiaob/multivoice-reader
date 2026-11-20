@@ -48,3 +48,31 @@ def test_numbers_are_spelled_out():
     assert speakable("涨了3.5%，共20000人，1010次") == "涨了百分之三点五，共二万人，一千零一十次"
     assert speakable("2024年的10个徒弟") == "二零二四年的十个徒弟"
     assert speakable("一共100000001块") == "一共一亿零一块"
+
+
+def test_straight_quotes_and_double_corner_brackets_are_dialogue():
+    segs = split_segments(['他抬头："你怎么还在这儿？"她没有回答。', "『走吧。』"])
+    assert [(s.kind, s.text) for s in segs] == [
+        ("narration", "他抬头："),
+        ("dialogue", "你怎么还在这儿？"),
+        ("narration", "她没有回答。"),
+        ("dialogue", "走吧。"),
+    ]
+
+
+def test_heading_with_colon_and_no_space():
+    chapters = split_chapters("第1章：迁徙\n第一段。\n第二章、归来\n第二段。\n")
+    assert [c.title for c in chapters] == ["第1章：迁徙", "第二章、归来"]
+
+
+def test_repeated_watermark_lines_are_dropped():
+    body = "\n".join(f"第{i}章 标题\n本站推荐各位书友阅读这本书\n这是第{i}章的正文。" for i in range(1, 15))
+    chapters = split_chapters(body)
+    assert len(chapters) == 14 and all(len(c.paragraphs) == 1 for c in chapters)
+
+
+def test_story_before_the_first_recognised_heading_is_kept():
+    early = "\n".join(f"这是没有被认出标题的前几章里的第{i}段正文，讲了很多事情。" for i in range(400))
+    chapters = split_chapters(early + "\n第181章 后来\n最后一段。\n")
+    assert chapters[0].title == "开头 第 1 段" and chapters[-1].title == "第181章 后来"
+    assert sum(len(c.paragraphs) for c in chapters) == 401
