@@ -1,7 +1,9 @@
 """Score a model on finetune/data/test.jsonl: how often it names the right speaker and emotion.
 
-uv run --no-project --python 3.11 --with mlx-lm python finetune/evaluate.py --adapter finetune/adapter
-... --limit 100                                   # fewer examples, quicker
+    uv run --no-project --python 3.11 --with mlx-lm python finetune/evaluate.py --adapter finetune/adapter
+    ... --limit 100                                   # fewer examples, quicker
+
+Runs on MLX on a Mac and on PyTorch elsewhere; see backends.py.
 """
 
 import argparse
@@ -9,10 +11,9 @@ import json
 import time
 from pathlib import Path
 
-from mlx_lm import generate, load
-from train import BASE
+from backends import BASE, load_generator
 
-from multivoice_reader.analyze import _first_json, chat_prompt
+from multivoice_reader.analyze import _first_json
 
 ROOT = Path(__file__).parent
 
@@ -23,14 +24,13 @@ def main() -> None:
     parser.add_argument("--adapter", help="LoRA 权重目录；不给就评测原始模型")
     parser.add_argument("--limit", type=int, default=200)
     args = parser.parse_args()
-    model, tokenizer = load(args.model, adapter_path=args.adapter)
+    generate = load_generator(args.model, args.adapter)
     rows = [json.loads(line) for line in (ROOT / "data" / "test.jsonl").open(encoding="utf-8")][: args.limit]
     lines = speaker_ok = emotion_ok = whole_ok = 0
     started = time.time()
-    for row in rows:
-        gold = json.loads(row["messages"][1]["content"])
-        prompt = chat_prompt(tokenizer, row["messages"][0]["content"])
-        answer = generate(model, tokenizer, prompt=prompt, max_tokens=40 * len(gold) + 40, verbose=False)
+    golds = [json.loads(row["messages"][1]["content"]) for row in rows]
+    answers = generate([row["messages"][0]["content"] for row in rows], 40 * max(map(len, golds)) + 40)
+    for gold, answer in zip(golds, answers, strict=True):
         found = {x.get("id"): x for x in _first_json(answer, "[", "]") or [] if isinstance(x, dict)}
         right = 0
         for item in gold:

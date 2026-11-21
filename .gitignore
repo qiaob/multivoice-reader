@@ -232,3 +232,4 @@ books/
 finetune/adapter/0*_adapters.safetensors
 
 .DS_Store
+finetune/runs/

@@ -15,7 +15,7 @@ cd multivoice-reader
 uv run mvr read 小说.txt
 ```
 
-第一次运行会下载两个模型，共约 5.5 GB。之后浏览器会打开朗读页面：
+第一次运行会下载两个模型，共约 8.4 GB。之后浏览器会打开朗读页面：
 
 - 左边是章节目录，中间是正文，右边是每个角色用的声音。
 - 点「播放」开始读。正文里已经合成好的句子是深色的，还没好的是浅色的，点任何一句可以从那里读起。
@@ -66,7 +66,7 @@ uv run --no-project --with mlx-audio python audition/serve.py     # http://127.0
 | 用途 | 模型 |
 |---|---|
 | 合成语音（复刻加情绪） | Ming-3.0-tts-0.5B |
-| 判断说话人和情绪 | Qwen3-4B-Instruct（4bit 量化） |
+| 判断说话人和情绪 | Qwen3.5-9B（4bit 量化） |
 | 设计内置音色 | Qwen3-TTS VoiceDesign |
 | 复刻时分离人声、去噪、识别原话 | Mel-Band-RoFormer、DeepFilterNet、Qwen3-ASR |
 

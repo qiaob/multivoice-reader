@@ -6,6 +6,7 @@
 
 A speaker counts as right if it is the gold name or one of its accepted alternatives; lines
 the labeller could not decide are left out. Prints accuracy overall and per book.
+Runs on MLX on a Mac and on PyTorch elsewhere; see backends.py.
 """
 
 import argparse
@@ -14,10 +15,9 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
-from mlx_lm import generate, load
-from train import BASE
+from backends import BASE, load_generator
 
-from multivoice_reader.analyze import EMOTIONS, LABEL_PROMPT, _clean_name, _first_json, chat_prompt
+from multivoice_reader.analyze import EMOTIONS, LABEL_PROMPT, _clean_name, _first_json
 
 
 def main() -> None:
@@ -28,17 +28,16 @@ def main() -> None:
     parser.add_argument("--adapter", help="LoRA 权重目录；不给就按未微调的模型、用完整的说明来问")
     args = parser.parse_args()
     gold = {row["id"]: row["labels"] for row in map(json.loads, args.gold.open(encoding="utf-8"))}
-    model, tokenizer = load(args.model, adapter_path=args.adapter)
-    per_book = defaultdict(lambda: [0, 0, 0])  # lines, speakers right, emotions right
-    for path in sorted(args.items.glob("*.json")):
-        item = json.loads(path.read_text(encoding="utf-8"))
-        prompt = item["prompt"]
-        if not args.adapter:  # an untuned model needs the rules spelled out
+    generate = load_generator(args.model, args.adapter)
+    items = [json.loads(path.read_text(encoding="utf-8")) for path in sorted(args.items.glob("*.json"))]
+    prompts = [item["prompt"] for item in items]
+    if not args.adapter:  # an untuned model needs the rules spelled out
+        for i, prompt in enumerate(prompts):
             known, excerpt = re.match(r"已知角色：(.*?)\n\n(.*)\n\n标出", prompt, re.S).groups()
-            prompt = LABEL_PROMPT.format(known=known, excerpt=excerpt, emotions="、".join(EMOTIONS))
-        answer = generate(
-            model, tokenizer, prompt=chat_prompt(tokenizer, prompt), max_tokens=40 * len(item["lines"]) + 40
-        )
+            prompts[i] = LABEL_PROMPT.format(known=known, excerpt=excerpt, emotions="、".join(EMOTIONS))
+    answers = generate(prompts, 40 * max(len(item["lines"]) for item in items) + 40)
+    per_book = defaultdict(lambda: [0, 0, 0])  # lines, speakers right, emotions right
+    for item, answer in zip(items, answers, strict=True):
         found = {x.get("id"): x for x in _first_json(answer, "[", "]") or [] if isinstance(x, dict)}
         for label in gold[item["id"]]:
             if label.get("unsure"):
