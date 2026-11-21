@@ -6,10 +6,9 @@ from multivoice_reader.analyze import ADAPTERS, DEFAULT_MODEL, MODELS, _profile_
 def test_every_fine_tuned_model_has_its_weights_and_they_name_its_base():
     assert DEFAULT_MODEL in MODELS
     for about in MODELS.values():
-        if about["adapter"]:
-            folder = ADAPTERS / about["adapter"]
-            assert (folder / "adapters.safetensors").is_file()
-            assert json.loads((folder / "adapter_config.json").read_text())["model"] == about["base"]
+        folder = ADAPTERS / about["adapter"]
+        assert (folder / "adapters.safetensors").is_file()
+        assert json.loads((folder / "adapter_config.json").read_text())["model"] == about["base"]
 
 
 def test_a_profile_is_found_in_one_object_or_in_one_per_line():

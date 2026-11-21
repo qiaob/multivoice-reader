@@ -11,9 +11,9 @@ from pathlib import Path
 from .script import AGES, EMOTIONS, GENDERS, NARRATOR, UNKNOWN
 from .text import Segment
 
-# The models that can do the labelling, best first. `adapter` names a folder in models/: LoRA
-# weights fine-tuned on this task, which only fit that base. How each one scores is in
-# finetune/RESULTS.md.
+# The models that can do the labelling, best first: a base model plus LoRA weights fine-tuned
+# on this task, which only fit that base. `adapter` names their folder in models/. How each
+# one scores, and how untuned models compare, is in finetune/RESULTS.md.
 MODELS = {
     "qwen3.5-4b": {
         "base": "mlx-community/Qwen3.5-4B-MLX-4bit",
@@ -25,11 +25,6 @@ MODELS = {
         "adapter": "qwen3-1.7b",
         "about": "Qwen3-1.7B 微调版：最快最省内存，下载 0.9 GB",
     },
-    "qwen3.5-9b": {
-        "base": "mlx-community/Qwen3.5-9B-MLX-4bit",
-        "adapter": None,
-        "about": "Qwen3.5-9B 未微调：下载 5.6 GB",
-    },
 }
 DEFAULT_MODEL = "qwen3.5-4b"
 ADAPTERS = Path(__file__).parent / "models"
@@ -37,6 +32,8 @@ LINES_PER_ASK = 8  # dialogue lines labelled in one request
 CONTEXT_PARAGRAPHS = 3  # narration shown before the first line of a request
 PROFILE_EXCERPT_CHARS = 3500
 
+# What a model that was not fine-tuned has to be told. The reader's own models get the short
+# prompt below; this one is for scoring untuned models against them in finetune/.
 LABEL_PROMPT = """下面是一段小说，对白前面标了编号【n】。
 
 已知角色：{known}
@@ -158,10 +155,7 @@ class Analyzer:
         from mlx_lm.tuner.lora import LoRALinear
 
         about = MODELS[name]
-        adapter = str(ADAPTERS / about["adapter"]) if about["adapter"] else None
-        self.model, self.tokenizer = load(about["base"], adapter_path=adapter)
-        # An adapter means the model was fine-tuned on the short prompt; see finetune/.
-        self.template = SHORT_LABEL_PROMPT if adapter else LABEL_PROMPT
+        self.model, self.tokenizer = load(about["base"], adapter_path=str(ADAPTERS / about["adapter"]))
         self.tuned = [(m, m.scale) for _, m in self.model.named_modules() if isinstance(m, LoRALinear)]
 
     def ask(self, prompt: str, max_tokens: int, tuned: bool = True) -> str:
@@ -183,7 +177,7 @@ class Analyzer:
         labels = [{"speaker": NARRATOR, "emotion": "中性"} for _ in segments]
         known = list(known)
         for batch in label_batches(segments):
-            prompt, numbers = label_request(segments, batch, known, self.template)
+            prompt, numbers = label_request(segments, batch, known, SHORT_LABEL_PROMPT)
             answer = self.ask(prompt, max_tokens=40 * len(batch) + 40)
             by_number = {}
             for item in _first_json(answer, "[", "]") or []:
