@@ -188,7 +188,9 @@ function describe(status) {
   else if (playing && waiting) note = '这一句还在合成，好了会自动接着读。';
   $('pageNote').textContent = note;
   const states = { speaking: '正在合成', idle: '这几章都准备好了', error: '后台出错了', paused: '合成暂停中' };
-  const which = status.chapter === undefined ? '' : `：${app.reading.chapters[status.chapter]}`;
+  // The count moves as lines are made, which is how one can tell that it is really working.
+  const count = status.state === 'speaking' && status.total ? `，${status.done} / ${status.total} 句` : '';
+  const which = status.chapter === undefined ? '' : `：${app.reading.chapters[status.chapter]}${count}`;
   $('status').textContent = (states[status.state] || '') + (status.chapter === undefined || status.state === 'error' ? '' : which);
   $('status').className = status.state === 'error' ? 'error' : '';
 }
