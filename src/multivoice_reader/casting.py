@@ -30,3 +30,28 @@ def pick_voice(profile: dict, voices: dict[str, Voice], in_use: Counter) -> str:
     pool = [v for v in voices.values() if v.kind != "clone"] or list(voices.values())
     gender, age = profile.get("gender", UNKNOWN), profile.get("age", UNKNOWN)
     return max(pool, key=lambda v: _fit(v, gender, age, in_use[v.id])).id
+
+
+def assign(
+    characters: dict[str, dict], voices: dict[str, Voice], before: dict[str, str], narrator: str | None = None
+) -> dict[str, str]:
+    """A voice for every character, in the order given, so the first get the pick of the voices.
+
+    Whoever already has a voice that still exists keeps it. A character of whom neither gender
+    nor age is known is left out: they speak with the narrator's voice until the listener says
+    otherwise.
+    """
+    narrator = narrator if narrator in voices else narrator_voice(voices)
+    kept = {name: before[name] for name in characters if before.get(name) in voices}
+    in_use = Counter(kept.values())
+    in_use[narrator] += 1
+    out = {}
+    for name, about in characters.items():
+        if name in kept:
+            out[name] = kept[name]
+        elif about.get("gender", UNKNOWN) == UNKNOWN and about.get("age", UNKNOWN) == UNKNOWN:
+            continue
+        else:
+            out[name] = pick_voice(about, voices, in_use)
+            in_use[out[name]] += 1
+    return out

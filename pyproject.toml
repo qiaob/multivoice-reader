@@ -9,6 +9,7 @@ dependencies = [
     "mlx-audio",
     "mlx-lm",
     "numpy",
+    "scipy",
     "soundfile",
 ]
 
@@ -31,6 +32,8 @@ select = ["E", "F", "I", "B"]
 [tool.ruff.lint.per-file-ignores]
 # Prompts are written out as the model reads them.
 "src/multivoice_reader/analyze.py" = ["E501"]
+# Sample lines are written out as they are read.
+"src/multivoice_reader/voices.py" = ["E501"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

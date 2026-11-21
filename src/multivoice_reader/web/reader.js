@@ -1,14 +1,16 @@
-// The reader: shows a chapter, plays its lines in order as their audio becomes ready,
-// and lets the listener change which voice a character has.
+// The reading page. Without ?id= it lists every script; with it, it is the reader for one:
+// shows a chapter, plays its lines in order as their audio becomes ready, and lets the
+// listener change which voice a character has.
 const $ = (id) => document.getElementById(id);
 const POLL_MS = 1500;
 const NARRATOR = '旁白';
 const audio = new Audio();
+const readingId = new URLSearchParams(location.search).get('id');
+const withId = 'id=' + encodeURIComponent(readingId || '');
 
-let app = null;            // /api/state: the open book, known books, voice library
+let app = null;            // { reading: the script on this page, voices: the voice library }
 let chapter = 0;
 let segments = [];
-let analysed = false;
 let at = 0;                // index of the current line
 let playing = false;       // the listener wants playback
 let waiting = false;       // ...but the current line is not ready yet
@@ -24,57 +26,107 @@ async function api(path, options) {
 const post = (path, body) => api(path, {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 
-// ---- choosing a book ----
-function showShelf() {
-  stopAudio();
-  $('reader').hidden = $('player').hidden = true;
-  $('shelf').hidden = false;
-  $('shelfBooks').hidden = !app.books.length;
-  $('bookList').replaceChildren(...app.books.map((book) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.append(book.title, Object.assign(document.createElement('span'), { textContent: `${book.chapters} 章` }));
-    button.addEventListener('click', () => openBook(() => post('/api/open', { id: book.id })));
-    return Object.assign(document.createElement('li'), {}).appendChild(button).parentNode;
-  }));
+// ---- the list of scripts ----
+const el = (tag, props, ...children) => {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children);
+  return node;
+};
+function tell(text, isError) {
+  $('shelfStatus').textContent = text;
+  $('shelfStatus').className = isError ? 'error' : '';
 }
-async function openBook(request) {
-  $('shelfStatus').textContent = '正在打开，长篇小说切章需要几秒…';
-  try {
-    app = await request();
-    $('shelfStatus').textContent = '';
-    showReader();
-  } catch (err) {
-    $('shelfStatus').textContent = '没有打开：' + err.message;
+const STATES = {
+  speaking: () => '正在合成',
+  waiting: (item) => `等着整份合成，第 ${item.place} 位`,
+  done: () => '全部合成好了',
+  idle: () => '',
+  error: (item) => '出错了：' + item.message,
+};
+const rows = new Map();    // reading id -> the row and the parts of it that change
+function makeRow(item) {
+  const made = el('td', { className: 'num' });
+  const chapters = el('td', { className: 'num' });
+  const state = el('td', { className: 'state' });
+  const whole = el('button', { type: 'button' });
+  whole.addEventListener('click', async () => {
+    try {
+      await post('/api/readings/whole', { id: item.id, on: whole.dataset.on !== '1' });
+      refreshList();
+    } catch (err) { tell(err.message, true); }
+  });
+  const remove = el('button', { type: 'button', className: 'remove', textContent: '删除' });
+  remove.addEventListener('click', async () => {
+    if (!confirm(`删除「${item.title}」？它的选角和已经合成的音频会一起删掉。`)) return;
+    try { await post('/api/readings/remove', { id: item.id }); refreshList(); } catch (err) { tell(err.message, true); }
+  });
+  const link = '/?id=' + encodeURIComponent(item.id);
+  const row = el('tr', {},
+    el('td', { className: 'title' }, el('a', { href: link, textContent: item.title })), chapters, made, state,
+    el('td', { className: 'acts' }, el('a', { className: 'button', href: link, textContent: '听' }), whole, remove));
+  return { row, made, chapters, state, whole };
+}
+function paintRow(parts, item) {
+  parts.chapters.textContent = `${item.chapters} 章`;
+  parts.made.textContent = item.made === null ? `… / ${item.lines} 句` : `${item.made} / ${item.lines} 句`;
+  parts.state.textContent = STATES[item.state](item);
+  parts.state.className = 'state' + (item.state === 'error' ? ' error' : item.state === 'speaking' ? ' busy' : '');
+  parts.whole.dataset.on = item.whole ? '1' : '';
+  parts.whole.textContent = item.whole ? '不提前合成了' : '整份提前合成';
+  parts.whole.hidden = item.state === 'done';
+}
+async function refreshList() {
+  let data;
+  try { data = await api('/api/readings'); } catch (err) { tell('页面服务没有响应：' + err.message, true); return; }
+  const seen = new Set();
+  for (const item of data.readings) {
+    seen.add(item.id);
+    if (!rows.has(item.id)) {
+      rows.set(item.id, makeRow(item));
+      $('bookRows').append(rows.get(item.id).row);
+    }
+    paintRow(rows.get(item.id), item);
   }
+  for (const [id, parts] of rows) if (!seen.has(id)) { parts.row.remove(); rows.delete(id); }
+  $('bookTable').hidden = data.readings.length === 0;
+  $('shelfEmpty').hidden = data.readings.length > 0;
+  $('status').textContent = data.cloning ? '正在复刻声音，合成先停一下' : '';
 }
-$('bookFile').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  openBook(() => api('/api/books?' + new URLSearchParams({ name: file.name }), {
-    method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file }));
+$('bookFile').addEventListener('change', async (e) => {
+  const files = [...e.target.files];
+  e.target.value = '';
+  const failed = [];
+  for (const [index, file] of files.entries()) {
+    tell(`正在添加 ${index + 1} / ${files.length}：${file.name}`);
+    try {
+      await api('/api/readings', { method: 'POST', body: file, headers: {
+        'Content-Type': 'application/octet-stream', 'X-Filename': encodeURIComponent(file.name) } });
+    } catch (err) { failed.push(`${file.name}（${err.message}）`); }
+    await refreshList();
+  }
+  if (failed.length) tell('没有加上：' + failed.join('；'), true);
+  else tell(`已添加 ${files.length} 份。`);
 });
-$('changeBook').addEventListener('click', showShelf);
 
 // ---- the reading view ----
-const placeKey = () => 'mvr-place-' + app.book.id;
+const placeKey = () => 'mvr-place-' + app.reading.id;
 function showReader() {
   $('shelf').hidden = true;
   $('reader').hidden = $('player').hidden = false;
-  $('bookTitle').textContent = app.book.title;
-  $('chapterList').replaceChildren(...app.book.chapters.map((title, index) => {
+  $('bookTitle').textContent = app.reading.title;
+  $('chapterList').replaceChildren(...app.reading.chapters.map((title, index) => {
     const button = Object.assign(document.createElement('button'), { type: 'button', textContent: title });
     button.addEventListener('click', () => openChapter(index, 0, playing));
     return Object.assign(document.createElement('li'), {}).appendChild(button).parentNode;
   }));
   const place = JSON.parse(localStorage.getItem(placeKey()) || '{}');
-  openChapter(Math.min(place.chapter || 0, app.book.chapters.length - 1), place.at || 0, false);
+  openChapter(Math.min(place.chapter || 0, app.reading.chapters.length - 1), place.at || 0, false);
 }
 function openChapter(index, line, keepPlaying) {
   stopAudio();
-  chapter = index; at = line; segments = []; analysed = false;
+  chapter = index; at = line; segments = [];
   playing = keepPlaying; waiting = keepPlaying;
-  $('chapterTitle').textContent = app.book.chapters[index];
+  $('chapterTitle').textContent = app.reading.chapters[index];
   $('text').replaceChildren();
   $('page').scrollTop = 0;
   document.querySelectorAll('#chapterList button').forEach((button, i) => {
@@ -86,7 +138,7 @@ function openChapter(index, line, keepPlaying) {
 }
 function tellWorker() {
   localStorage.setItem(placeKey(), JSON.stringify({ chapter, at }));
-  post('/api/target', { chapter, segment: at }).catch(() => {});
+  post('/api/target', { id: readingId, chapter, segment: at }).catch(() => {});
 }
 
 function renderText() {
@@ -98,7 +150,7 @@ function renderText() {
     if (segment.para !== lastPara) { paragraph = document.createElement('p'); paragraphs.push(paragraph); lastPara = segment.para; }
     const span = Object.assign(document.createElement('span'), { className: 'seg' });
     span.dataset.index = index;
-    if (segment.kind === 'dialogue') {
+    if (segment.speaker !== NARRATOR) {
       const feeling = segment.emotion === '中性' ? '' : `（${segment.emotion}）`;
       paragraph.append(Object.assign(document.createElement('span'), {
         className: 'who', textContent: segment.speaker + feeling }));
@@ -127,26 +179,26 @@ $('text').addEventListener('click', (e) => {
 
 function describe(status) {
   const done = segments.filter((s) => s.audio).length;
-  $('ready').textContent = analysed ? `本章已合成 ${done} / ${segments.length} 句` : '';
-  $('where').textContent = analysed && segments.length ? `第 ${Math.min(at + 1, segments.length)} 句，共 ${segments.length} 句` : '';
+  $('ready').textContent = segments.length ? `本章已合成 ${done} / ${segments.length} 句` : '';
+  $('where').textContent = segments.length ? `第 ${Math.min(at + 1, segments.length)} 句，共 ${segments.length} 句` : '';
   $('toggle').textContent = playing ? '暂停' : '播放';
   let note = '';
   if (status.state === 'error') note = '后台出错了：' + status.message;
-  else if (!analysed) note = '正在分析这一章：分出旁白和对白，判断每句话是谁说的。第一次需要一两分钟，包含加载模型的时间。';
+  else if (status.state === 'paused') note = '正在复刻声音，合成先停一下，复刻完自动继续。';
   else if (playing && waiting) note = '这一句还在合成，好了会自动接着读。';
   $('pageNote').textContent = note;
-  const states = { analysing: '正在分析', speaking: '正在合成', idle: '这几章都准备好了', error: '后台出错了' };
-  const which = status.chapter === undefined ? '' : `：${app.book.chapters[status.chapter]}`;
-  $('status').textContent = (states[status.state] || '') + (status.state === 'idle' || status.state === 'error' ? '' : which);
+  const states = { speaking: '正在合成', idle: '这几章都准备好了', error: '后台出错了', paused: '合成暂停中' };
+  const which = status.chapter === undefined ? '' : `：${app.reading.chapters[status.chapter]}`;
+  $('status').textContent = (states[status.state] || '') + (status.chapter === undefined || status.state === 'error' ? '' : which);
   $('status').className = status.state === 'error' ? 'error' : '';
 }
 
 async function refresh() {
-  if (!app || !app.book || !$('shelf').hidden) return;
+  if (!app) return;
   const asked = chapter;
   let data;
   try {
-    data = await api(`/api/chapter?k=${asked}`);
+    data = await api(`/api/chapter?${withId}&k=${asked}`);
   } catch (err) {
     $('pageNote').textContent = '页面服务没有响应：' + err.message;
     return;
@@ -154,8 +206,9 @@ async function refresh() {
   if (asked !== chapter) return;
   // Re-render only when the script itself changed (first analysis, or a voice was changed).
   const changed = data.segments.length !== segments.length
-    || data.segments.some((s, i) => s.speaker !== segments[i].speaker || s.emotion !== segments[i].emotion);
-  segments = data.segments; analysed = data.analysed;
+    || data.segments.some((s, i) => s.text !== segments[i].text || s.speaker !== segments[i].speaker
+      || s.emotion !== segments[i].emotion);
+  segments = data.segments;
   if (changed) { at = Math.min(at, Math.max(segments.length - 1, 0)); renderText(); }
   paintText();
   describe(data.status);
@@ -167,9 +220,8 @@ setInterval(refresh, POLL_MS);
 // ---- playback ----
 function stopAudio() { playToken++; audio.pause(); }
 async function playCurrent() {
-  if (!analysed) { waiting = true; return; }
   if (at >= segments.length) {
-    if (chapter + 1 < app.book.chapters.length) return openChapter(chapter + 1, 0, true);
+    if (chapter + 1 < app.reading.chapters.length) return openChapter(chapter + 1, 0, true);
     playing = false; return;
   }
   const segment = segments[at];
@@ -226,7 +278,7 @@ function voiceOptions(selected, chosen) {
 async function refreshCast() {
   if (document.activeElement && document.activeElement.closest('#castList')) return;  // mid-choice
   let rows;
-  try { rows = await api('/api/cast'); } catch { return; }
+  try { rows = await api('/api/cast?' + withId); } catch { return; }
   const json = JSON.stringify(rows);
   if (json === castJson) return;
   castJson = json;
@@ -238,7 +290,7 @@ async function refreshCast() {
       Object.assign(document.createElement('small'), { textContent: about.join('，') }));
     const select = voiceOptions(row.voice, row.chosen);
     select.addEventListener('change', async () => {
-      await post('/api/cast', { name: row.name, voice: select.value });
+      await post('/api/cast', { id: readingId, name: row.name, voice: select.value });
       select.blur(); castJson = ''; refresh();
     });
     const listen = Object.assign(document.createElement('button'), { type: 'button', textContent: '试听' });
@@ -260,7 +312,14 @@ async function refreshCast() {
 }
 
 // ---- start ----
-api('/api/state').then((state) => {
-  app = state;
-  if (app.book) showReader(); else showShelf();
-}).catch((err) => { $('shelf').hidden = false; $('shelfStatus').textContent = '页面服务没有响应：' + err.message; });
+if (readingId) {
+  Promise.all([api('/api/reading?' + withId), api('/api/voices')]).then(([reading, library]) => {
+    app = { reading, voices: library.voices };
+    document.title = reading.title + ' · 朗读 · multivoice-reader';
+    showReader();
+  }).catch(() => location.replace('/'));
+} else {
+  $('shelf').hidden = false;
+  refreshList();
+  setInterval(refreshList, POLL_MS);
+}

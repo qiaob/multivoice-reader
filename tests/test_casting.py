@@ -37,3 +37,20 @@ def test_prefers_a_voice_nobody_has_yet():
 def test_cloned_voices_are_never_assigned_automatically():
     in_use = Counter({"m_youth": 5, "m_elder": 5, "n_m_passion": 5})
     assert pick_voice({"gender": "男", "age": "青年"}, VOICES, in_use) != "mine"
+
+
+def test_assign_gives_the_first_characters_the_pick_and_keeps_what_was_given():
+    from multivoice_reader.casting import assign
+
+    people = {
+        "主角": {"gender": "男", "age": "少年"},
+        "配角": {"gender": "男", "age": "少年"},
+        "路人": {"gender": "未知", "age": "未知"},
+    }
+    first = assign(people, VOICES, {})
+    assert first["主角"] == "m_youth" and first["配角"] == "m_elder"
+    assert "路人" not in first  # nothing known: left to the narrator's voice
+    again = assign({"新人": {"gender": "男", "age": "少年"}, **people}, VOICES, first)
+    assert again["主角"] == "m_youth" and again["配角"] == "m_elder"
+    gone = assign(people, {k: v for k, v in VOICES.items() if k != "m_youth"}, first)
+    assert gone["主角"] != "m_youth" and gone["配角"] == "m_elder"

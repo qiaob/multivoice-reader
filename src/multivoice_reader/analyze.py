@@ -6,15 +6,33 @@ speaker name and one emotion, so a wrong answer costs a wrong voice and nothing 
 
 import json
 import re
+from pathlib import Path
 
+from .script import AGES, EMOTIONS, GENDERS, NARRATOR, UNKNOWN
 from .text import Segment
 
-MODEL = "mlx-community/Qwen3.5-9B-MLX-4bit"
-EMOTIONS = ["中性", "高兴", "悲伤", "愤怒", "恐惧", "厌恶", "惊讶"]
-GENDERS = ["男", "女", "未知"]
-AGES = ["儿童", "少年", "青年", "中年", "老年", "未知"]
-UNKNOWN = "未知"
-NARRATOR = "旁白"
+# The models that can do the labelling, best first. `adapter` names a folder in models/: LoRA
+# weights fine-tuned on this task, which only fit that base. How each one scores is in
+# finetune/RESULTS.md.
+MODELS = {
+    "qwen3.5-4b": {
+        "base": "mlx-community/Qwen3.5-4B-MLX-4bit",
+        "adapter": "qwen3.5-4b",
+        "about": "Qwen3.5-4B 微调版：最准，下载 2.9 GB",
+    },
+    "qwen3-1.7b": {
+        "base": "mlx-community/Qwen3-1.7B-4bit",
+        "adapter": "qwen3-1.7b",
+        "about": "Qwen3-1.7B 微调版：最快最省内存，下载 0.9 GB",
+    },
+    "qwen3.5-9b": {
+        "base": "mlx-community/Qwen3.5-9B-MLX-4bit",
+        "adapter": None,
+        "about": "Qwen3.5-9B 未微调：下载 5.6 GB",
+    },
+}
+DEFAULT_MODEL = "qwen3.5-4b"
+ADAPTERS = Path(__file__).parent / "models"
 LINES_PER_ASK = 8  # dialogue lines labelled in one request
 CONTEXT_PARAGRAPHS = 3  # narration shown before the first line of a request
 PROFILE_EXCERPT_CHARS = 3500
@@ -71,6 +89,16 @@ def _first_json(text: str, opener: str, closer: str):
         return None
 
 
+def _profile_in(answer: str, name: str) -> dict:
+    """What the answer says about one character. Looked up by name, not parsed whole, because
+    a small model may write one object per line instead of a single one."""
+    found = re.search(r'"%s"\s*:\s*(\{[^{}]*\})' % re.escape(name), answer)
+    try:
+        return json.loads(found.group(1)) if found else {}
+    except ValueError:
+        return {}
+
+
 def _clean_name(name) -> str:
     name = re.sub(r"[（(【\[].*$", "", str(name or "")).strip(" 　\"“”'：:")
     return name[:12] or UNKNOWN
@@ -122,18 +150,33 @@ def chat_prompt(tokenizer, prompt: str) -> str:
 
 
 class Analyzer:
-    def __init__(self, model: str = MODEL, adapter: str | None = None):
+    def __init__(self, name: str = DEFAULT_MODEL):
+        """`name` is one of MODELS; ValueError if it is not."""
+        if name not in MODELS:
+            raise ValueError(f"没有「{name}」这个模型，可以用的有：{'、'.join(MODELS)}")
         from mlx_lm import load
+        from mlx_lm.tuner.lora import LoRALinear
 
-        self.model, self.tokenizer = load(model, adapter_path=adapter)
+        about = MODELS[name]
+        adapter = str(ADAPTERS / about["adapter"]) if about["adapter"] else None
+        self.model, self.tokenizer = load(about["base"], adapter_path=adapter)
         # An adapter means the model was fine-tuned on the short prompt; see finetune/.
         self.template = SHORT_LABEL_PROMPT if adapter else LABEL_PROMPT
+        self.tuned = [(m, m.scale) for _, m in self.model.named_modules() if isinstance(m, LoRALinear)]
 
-    def ask(self, prompt: str, max_tokens: int) -> str:
+    def ask(self, prompt: str, max_tokens: int, tuned: bool = True) -> str:
+        """The model's answer. `tuned=False` asks the model as it was before fine-tuning: the
+        fine-tuned one has learnt to answer everything as if it were asked to label lines."""
         from mlx_lm import generate
 
         text = chat_prompt(self.tokenizer, prompt)
-        return generate(self.model, self.tokenizer, prompt=text, max_tokens=max_tokens, verbose=False)
+        for layer, scale in self.tuned:
+            layer.scale = scale if tuned else 0.0
+        try:
+            return generate(self.model, self.tokenizer, prompt=text, max_tokens=max_tokens, verbose=False)
+        finally:
+            for layer, scale in self.tuned:
+                layer.scale = scale
 
     def label(self, segments: list[Segment], known: list[str]) -> list[dict]:
         """One {"speaker", "emotion"} per segment; narration is the narrator, neutral."""
@@ -168,11 +211,11 @@ class Analyzer:
                 ages="、".join(AGES),
             ),
             max_tokens=30 * len(names) + 40,
+            tuned=False,
         )
-        found = _first_json(answer, "{", "}") or {}
         out = {}
         for name in names:
-            item = found.get(name) if isinstance(found.get(name), dict) else {}
+            item = _profile_in(answer, name)
             out[name] = {
                 "gender": item.get("gender") if item.get("gender") in GENDERS else UNKNOWN,
                 "age": item.get("age") if item.get("age") in AGES else UNKNOWN,

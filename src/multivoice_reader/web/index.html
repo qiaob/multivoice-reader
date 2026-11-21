@@ -2,33 +2,37 @@
 <html lang="zh-CN">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>朗读</title>
+<title>朗读 · multivoice-reader</title>
 <link rel="stylesheet" href="reader.css">
 <header class="top">
-  <h1>选角台</h1>
+  <h1>multivoice-reader</h1>
   <nav class="tabs">
+    <a href="/split.html">拆分</a>
     <a aria-current="page" href="/">朗读</a>
-    <a href="http://127.0.0.1:8765/#audition">声音试听</a>
-    <a href="http://127.0.0.1:8765/#clone">声音复刻</a>
+    <a href="/voices.html">声音试听</a>
+    <a href="/clone.html">声音复刻</a>
   </nav>
   <span id="status" role="status"></span>
 </header>
 
-<main id="shelf" hidden>
-  <h2>打开一本小说</h2>
-  <p>选一个 txt 文件。分角色、选声音、合成语音都在这台电脑上完成，文件不会上传到别处。</p>
-  <label class="primary">选择 txt 文件<input type="file" id="bookFile" accept=".txt,text/plain" hidden></label>
-  <p id="shelfStatus" role="status"></p>
-  <div id="shelfBooks" hidden>
-    <h3>读过的</h3>
-    <ul id="bookList"></ul>
+<main id="shelf" class="list" hidden>
+  <div class="listhead">
+    <h2>朗读脚本</h2>
+    <label class="primary">添加脚本文件<input type="file" id="bookFile" accept=".json,application/json" multiple hidden></label>
   </div>
+  <p class="lead">朗读脚本写明了每一句话是谁说的、带什么情绪。可以在<a href="/split.html">拆分</a>页从小说拆出来，也可以是任何符合格式的 JSON 文件。点一份脚本进去听，边听边合成；也可以让它把整份提前合成好。合成在这台电脑上完成。</p>
+  <p id="shelfStatus" role="status"></p>
+  <table class="rows" id="bookTable" hidden>
+    <thead><tr><th>脚本</th><th>章数</th><th>已合成</th><th>状态</th><th></th></tr></thead>
+    <tbody id="bookRows"></tbody>
+  </table>
+  <p class="empty" id="shelfEmpty" hidden>还没有脚本。到拆分页拆一本小说再送过来，或者点右上角添加脚本文件。</p>
 </main>
 
 <main id="reader" hidden>
   <nav id="chapters" aria-label="章节">
     <h2 id="bookTitle"></h2>
-    <button type="button" class="link" id="changeBook">换一本</button>
+    <a class="back" href="/">返回脚本列表</a>
     <ol id="chapterList"></ol>
   </nav>
   <article id="page">
@@ -38,7 +42,7 @@
   </article>
   <aside id="cast" aria-label="角色和声音">
     <h2>谁用哪个声音</h2>
-    <p class="hint">声音是自动选的，可以改。改了之后，这个角色的台词会重新合成。</p>
+    <p class="hint">声音是按角色的性别和年龄自动选的，可以改。改了之后，这个角色的台词会重新合成。</p>
     <ul id="castList"></ul>
   </aside>
 </main>
