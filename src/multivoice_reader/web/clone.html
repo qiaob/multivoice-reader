@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>声音复刻 · multivoice-reader</title>
+<link rel="stylesheet" href="reader.css">
+<link rel="stylesheet" href="voices.css">
+<header class="top">
+  <h1>multivoice-reader</h1>
+  <nav class="tabs">
+    <a href="/split.html">拆分</a>
+    <a href="/">朗读</a>
+    <a href="/voices.html">声音试听</a>
+    <a aria-current="page" href="/clone.html">声音复刻</a>
+  </nav>
+  <span id="status" role="status"></span>
+</header>
+
+<main class="library">
+  <div class="wrap clone-layout">
+    <form id="clone"><ol class="steps">
+      <li><h3>提供一段声音</h3>
+        <div class="sources">
+          <label><input type="radio" name="source" value="file" checked>文件</label>
+          <label><input type="radio" name="source" value="mic">麦克风</label>
+          <label><input type="radio" name="source" value="system">系统声音</label>
+        </div>
+        <p class="hint" id="sourceHint"></p>
+        <div class="source-body" data-for="file"><input type="file" name="audio" accept="audio/*,video/*"></div>
+        <div class="source-body recorder" data-for="mic system" hidden>
+          <button type="button" class="rec" id="recBtn" aria-label="开始录音"></button>
+          <div><span id="recInfo"></span><div class="meter"><i id="recLevel"></i></div></div>
+          <audio id="recPreview" controls hidden></audio>
+        </div></li>
+      <li><h3>给它起个名字</h3>
+        <input type="text" name="name" aria-label="名字" placeholder="比如：我的声音" required>
+        <label class="field">声音里说的原话。不填会自动识别，人名和生僻词可能认错
+          <input type="text" name="text"></label></li>
+      <li><h3>复刻</h3>
+        <button type="submit" class="primary">开始复刻</button>
+        <p id="cloneStatus" role="status"></p>
+        <p class="hint">全程在这台电脑上处理。只复刻你自己的声音，或已获得本人同意的声音。复刻期间朗读页的准备会暂停，复刻完自动继续。</p></li>
+    </ol></form>
+    <section class="group">
+      <h2>我的声音<small id="mineCount"></small></h2>
+      <p>复刻好的声音会出现在这里，每个都用朗读时的模型试读了几句。到朗读页的「谁用哪个声音」里就能选它。</p>
+      <ul class="voices" id="mineList"></ul>
+      <p class="empty" id="mineEmpty" hidden>还没有。在左边提供一段声音，复刻好的会出现在这里。</p>
+    </section>
+  </div>
+</main>
+<script src="voices.js"></script>
+<script src="clone.js"></script>
+</html>

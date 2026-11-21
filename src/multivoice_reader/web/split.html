@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>拆分 · multivoice-reader</title>
+<link rel="stylesheet" href="reader.css">
+<link rel="stylesheet" href="split.css">
+<header class="top">
+  <h1>multivoice-reader</h1>
+  <nav class="tabs">
+    <a aria-current="page" href="/split.html">拆分</a>
+    <a href="/">朗读</a>
+    <a href="/voices.html">声音试听</a>
+    <a href="/clone.html">声音复刻</a>
+  </nav>
+  <label class="model">拆分用的模型<select id="model"></select></label>
+  <span id="status" role="status"></span>
+</header>
+
+<main id="shelf" class="list" hidden>
+  <div class="listhead">
+    <h2>小说</h2>
+    <label class="primary">添加 txt 文件<input type="file" id="bookFile" accept=".txt,text/plain" multiple hidden></label>
+  </div>
+  <p class="lead">把小说切成章，再判断每句话是谁说的、带什么情绪，得到朗读脚本。可以一次加很多本，它们按点「拆分」的先后一本一本拆，用的是点的时候右上角选着的模型。这一步不涉及声音；拆好的可以导出脚本，或者送去朗读。全部在这台电脑上完成。</p>
+  <p id="shelfStatus" role="status"></p>
+  <table class="rows" id="bookTable" hidden>
+    <thead><tr><th>书名</th><th>已拆</th><th>状态</th><th>拆到第几章</th><th></th></tr></thead>
+    <tbody id="bookRows"></tbody>
+  </table>
+  <p class="empty" id="shelfEmpty" hidden>还没有小说。点右上角添加 txt 文件，可以一次选多个。</p>
+</main>
+
+<main id="reader" hidden>
+  <nav id="chapters" aria-label="章节">
+    <h2 id="bookTitle"></h2>
+    <a class="back" href="/split.html">返回小说列表</a>
+    <ol id="chapterList"></ol>
+  </nav>
+  <article id="page">
+    <h2 id="chapterTitle"></h2>
+    <p id="pageNote" role="status"></p>
+    <div id="text"></div>
+  </article>
+  <aside id="cast" aria-label="角色">
+    <h2>拆出来的角色</h2>
+    <p class="hint">性别和年龄是模型从原文判断的。给角色配声音在朗读页做。</p>
+    <ul id="castList"></ul>
+  </aside>
+</main>
+
+<footer id="player" hidden>
+  <label>拆到第<input type="number" id="until" min="1" step="1">章</label>
+  <button type="button" id="toggle" class="primary">拆分</button>
+  <span id="progress"></span>
+  <span class="out">
+    <a class="button" id="export" download>导出脚本</a>
+    <button type="button" id="send">送去朗读</button>
+  </span>
+</footer>
+<script src="split.js"></script>
+</html>

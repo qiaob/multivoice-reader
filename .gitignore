@@ -221,3 +221,19 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Voice audition output (generated audio)
+audition/out/
+
+# Local books used for testing
+books/
+
+# What train.py writes on a Mac; the weights that are kept are in finetune/adapters/
+finetune/adapter/
+
+.DS_Store
+finetune/runs/
+
+# Built by finetune/mix_real.py from the synthetic and the real training sets
+finetune/data/train_mixed.jsonl
+finetune/data/train_real.jsonl

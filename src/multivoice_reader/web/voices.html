@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>声音试听 · multivoice-reader</title>
+<link rel="stylesheet" href="reader.css">
+<link rel="stylesheet" href="voices.css">
+<header class="top">
+  <h1>multivoice-reader</h1>
+  <nav class="tabs">
+    <a href="/split.html">拆分</a>
+    <a href="/">朗读</a>
+    <a aria-current="page" href="/voices.html">声音试听</a>
+    <a href="/clone.html">声音复刻</a>
+  </nav>
+  <span id="status" role="status"></span>
+</header>
+
+<main class="library">
+  <div class="wrap">
+    <section class="group">
+      <h2>我的声音<small id="mineCount"></small></h2>
+      <p>你复刻或添加的声音。朗读时不会自动分给角色，要在朗读页的「谁用哪个声音」里自己选。</p>
+      <div class="actions">
+        <a class="primary" href="/clone.html">复刻一个声音</a>
+        <label class="secondary">添加声音包<input type="file" id="packFile" accept=".zip" hidden></label>
+      </div>
+      <ul class="voices" id="mineList"></ul>
+      <p class="empty" id="mineEmpty" hidden>还没有。可以用一段录音复刻一个，或者添加别人导出的声音包（.voice.zip）。</p>
+    </section>
+    <section class="group">
+      <h2>内置的声音<small id="builtinCount"></small></h2>
+      <p>按文字描述生成的原创音色，不是任何真人的声音。朗读时按角色的性别和年龄自动分配。</p>
+      <ul class="voices" id="builtinList"></ul>
+    </section>
+  </div>
+</main>
+<script src="voices.js"></script>
+</html>

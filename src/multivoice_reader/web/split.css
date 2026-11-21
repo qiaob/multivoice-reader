@@ -1,0 +1,17 @@
+/* The split page. Layout, colours and buttons come from reader.css. */
+.top label.model { margin-left: auto; font-size: .8rem; color: var(--muted); }
+.top label.model select { margin-left: 8px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px;
+                          background: var(--sheet); font-size: .85rem; color: var(--ink); }
+.top label.model + #status { margin-left: 0; }
+#chapterList button.todo { color: var(--faint); }
+#chapterList button.done::after { content: "已拆"; float: right; font-size: .7rem; color: var(--green-ink); }
+#text.raw p { color: var(--faint); }
+#castList small { margin-left: .5em; }
+#player label { font-size: .9rem; color: var(--muted); }
+#player input[type=number] { width: 5.5em; margin: 0 4px; padding: 6px 8px; border: 1px solid var(--line);
+                             border-radius: 4px; background: var(--paper); font: inherit; color: var(--ink); }
+#progress { margin-left: 12px; font-variant-numeric: tabular-nums; }
+#player .out { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+#player a.button { padding: 8px 14px; border: 1px solid var(--line); border-radius: 4px; color: inherit;
+                   text-decoration: none; }
+#player a.button[aria-disabled=true] { opacity: .45; pointer-events: none; }
