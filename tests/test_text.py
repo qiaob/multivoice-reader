@@ -76,3 +76,16 @@ def test_story_before_the_first_recognised_heading_is_kept():
     chapters = split_chapters(early + "\n第181章 后来\n最后一段。\n")
     assert chapters[0].title == "开头 第 1 段" and chapters[-1].title == "第181章 后来"
     assert sum(len(c.paragraphs) for c in chapters) == 401
+
+
+def test_a_paragraph_wholly_in_brackets_is_the_system_speaking():
+    segments = split_segments(
+        ["【叮！获得能力：仙师天眼】", "张云一愣。", "【新书启航，求收藏求推荐】", "他说【系统】真好用。"]
+    )
+    assert [(s.kind, s.para) for s in segments] == [
+        ("system", 0),
+        ("narration", 1),
+        ("narration", 2),
+        ("narration", 3),
+    ]
+    assert segments[0].text == "【叮！获得能力：仙师天眼】"

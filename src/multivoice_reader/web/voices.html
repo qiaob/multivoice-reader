@@ -11,6 +11,7 @@
     <a href="/split.html">拆分</a>
     <a href="/">朗读</a>
     <a aria-current="page" href="/voices.html">声音试听</a>
+    <a href="/design.html">声音设计</a>
     <a href="/clone.html">声音复刻</a>
   </nav>
   <span id="status" role="status"></span>
@@ -20,13 +21,14 @@
   <div class="wrap">
     <section class="group">
       <h2>我的声音<small id="mineCount"></small></h2>
-      <p>你复刻或添加的声音。朗读时不会自动分给角色，要在朗读页的「谁用哪个声音」里自己选。</p>
+      <p>你设计、复刻或添加的声音。朗读时不会自动分给角色，要在朗读页的「谁用哪个声音」里自己选。</p>
       <div class="actions">
-        <a class="primary" href="/clone.html">复刻一个声音</a>
+        <a class="primary" href="/design.html">设计一个声音</a>
+        <a class="secondary" href="/clone.html">复刻一个声音</a>
         <label class="secondary">添加声音包<input type="file" id="packFile" accept=".zip" hidden></label>
       </div>
       <ul class="voices" id="mineList"></ul>
-      <p class="empty" id="mineEmpty" hidden>还没有。可以用一段录音复刻一个，或者添加别人导出的声音包（.voice.zip）。</p>
+      <p class="empty" id="mineEmpty" hidden>还没有。可以按描述设计一个，用一段录音复刻一个，或者添加别人导出的声音包（.voice.zip）。</p>
     </section>
     <section class="group">
       <h2>内置的声音<small id="builtinCount"></small></h2>

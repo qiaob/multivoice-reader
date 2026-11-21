@@ -8,7 +8,7 @@ import json
 import re
 from pathlib import Path
 
-from .script import AGES, EMOTIONS, GENDERS, NARRATOR, UNKNOWN
+from .script import AGES, EMOTIONS, GENDERS, NARRATOR, SYSTEM, UNKNOWN
 from .text import Segment
 
 # The models that can do the labelling, best first: a base model plus LoRA weights fine-tuned
@@ -125,7 +125,7 @@ def label_request(
         if seg.para != para:
             excerpt.append("\n")
             para = seg.para
-        if seg.kind == "narration":
+        if seg.kind != "dialogue":  # narration, or the system: shown as it is written
             excerpt.append(seg.text)
         elif i in numbers:
             excerpt.append(f"【{numbers[i]}】“{seg.text}”")
@@ -173,8 +173,12 @@ class Analyzer:
                 layer.scale = scale
 
     def label(self, segments: list[Segment], known: list[str]) -> list[dict]:
-        """One {"speaker", "emotion"} per segment; narration is the narrator, neutral."""
-        labels = [{"speaker": NARRATOR, "emotion": "中性"} for _ in segments]
+        """One {"speaker", "emotion"} per segment. Only dialogue is asked about: narration is
+        the narrator's and what the system announces is the system's, both neutral."""
+        labels = [
+            {"speaker": SYSTEM if segment.kind == "system" else NARRATOR, "emotion": "中性"}
+            for segment in segments
+        ]
         known = list(known)
         for batch in label_batches(segments):
             prompt, numbers = label_request(segments, batch, known, SHORT_LABEL_PROMPT)

@@ -103,7 +103,7 @@ async function refreshList() {
   for (const [id, parts] of rows) if (!seen.has(id)) { parts.row.remove(); rows.delete(id); }
   $('bookTable').hidden = data.books.length === 0;
   $('shelfEmpty').hidden = data.books.length > 0;
-  $('status').textContent = data.cloning ? '正在复刻声音，拆分先停一下' : '';
+  $('status').textContent = data.cloning ? '正在设计或复刻声音，拆分先停一下' : '';
 }
 $('bookFile').addEventListener('change', async (e) => {
   const files = [...e.target.files];
@@ -158,7 +158,7 @@ async function drawChapter() {
     if (line.speaker !== NARRATOR) {
       const feeling = line.emotion === '中性' ? '' : `（${line.emotion}）`;
       paragraph.append(el('span', { className: 'who', textContent: line.speaker + feeling }),
-        el('span', { className: 'seg ready', textContent: `“${line.text}”` }));
+        el('span', { className: 'seg ready', textContent: line.kind === 'system' ? line.text : `“${line.text}”` }));
     } else {
       paragraph.append(el('span', { className: 'seg ready', textContent: line.text }));
     }

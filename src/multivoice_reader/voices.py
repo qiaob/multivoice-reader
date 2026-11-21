@@ -48,11 +48,15 @@ class Voice:
     name: str
     gender: str  # 男 / 女 / 未知
     age: str  # 儿童 / 少年 / 青年 / 中年 / 老年 / 未知
-    kind: str  # "narrator", "character", or "clone" (a voice the user made; never auto-assigned)
+    # Built in: "narrator", "character", or "system" (what a novel's "system" announces with).
+    # Made by the user and never assigned automatically: "clone" (from a recording of someone)
+    # or "design" (from a description).
+    kind: str
     desc: str
     ref_audio: Path
     ref_text: str
     own: bool = False  # in the user's library, so theirs to remove
+    genre: str = ""  # made for one kind of story (see casting.GENRES); "" suits any
 
     def sample(self, sample_id: str) -> Path:
         return self.ref_audio.parent / "samples" / f"{sample_id}.mp3"
@@ -94,6 +98,7 @@ def load_voice(folder: Path, default_kind: str = "clone", own: bool = False) -> 
             ref_audio=ref,
             ref_text=config["ref_text"],
             own=own,
+            genre=config.get("genre") or "",
         )
     except (OSError, ValueError, KeyError):
         return None

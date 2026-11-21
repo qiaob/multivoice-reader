@@ -52,7 +52,8 @@ document.addEventListener('click', (e) => {
 // ---- the lists ----
 function voiceRow(voice) {
   const id = encodeURIComponent(voice.id);
-  const about = [voice.kind === 'narrator' ? '旁白' : '', voice.gender, voice.age].filter((x) => x && x !== '未知');
+  const kinds = { narrator: '旁白', system: '系统提示音', design: '设计的', clone: '复刻的' };
+  const about = [kinds[voice.kind] || '', voice.gender, voice.age].filter((x) => x && x !== '未知');
   const who = el('div', {},
     el('b', { className: 'name', textContent: voice.name }),
     el('span', { className: 'about', textContent: about.join('，') }),

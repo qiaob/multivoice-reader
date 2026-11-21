@@ -23,6 +23,7 @@ from pathlib import Path
 FORMAT = "multivoice-reader.script"
 VERSION = 1
 NARRATOR = "旁白"
+SYSTEM = "系统"  # the game-like "system" of a web novel: what it announces has its own voice
 NEUTRAL = "中性"
 UNKNOWN = "未知"
 EMOTIONS = [NEUTRAL, "高兴", "悲伤", "愤怒", "恐惧", "厌恶", "惊讶"]

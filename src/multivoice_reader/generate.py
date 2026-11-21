@@ -18,6 +18,7 @@ import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
+from .casting import GENRES
 from .reading import Reading
 from .script import NARRATOR, chapter_range, load
 from .voices import library
@@ -56,9 +57,11 @@ def generate(
     chapters: str = "",
     cast: dict[str, str] | None = None,
     tell: Callable[[str], None] = print,
+    genre: str | None = None,
 ) -> list[Path]:
     """Write the chapters' audio into `out` and return the files; ValueError says what was wrong.
-    `cast` maps a character (or 旁白) to the name of the voice to use."""
+    `cast` maps a character (or 旁白) to the name of the voice to use. `genre` is the kind of
+    story to read it as (casting.GENRES); None keeps what an earlier run into `out` used."""
     voices = library(list(voice_dirs))
     if not voices:
         raise ValueError("没有可用的声音")
@@ -73,6 +76,10 @@ def generate(
             raise ValueError(f"脚本里没有叫「{who}」的角色")
         chosen[who] = found[0]
     reading.save_cast(chosen)
+    if genre is not None and genre != reading.genre():
+        if genre and genre not in GENRES:
+            raise ValueError(f"没有「{genre}」这个题材，可以用的有：{'、'.join(GENRES)}")
+        reading.save_genre(genre)
     voice_of = caster(reading, voices)
     tell(f"《{reading.title}》共 {len(reading.chapters)} 章，这次处理 {len(wanted)} 章，输出到 {out}")
     tell(f"  旁白：{voices[voice_of(NARRATOR)].name}")
