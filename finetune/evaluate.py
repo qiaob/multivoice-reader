@@ -1,6 +1,7 @@
 """Score a model on finetune/data/test.jsonl: how often it names the right speaker and emotion.
 
-    uv run --no-project --python 3.11 --with mlx-lm python finetune/evaluate.py --adapter finetune/adapter
+    uv run --no-project --python 3.11 --with mlx-lm python finetune/evaluate.py \\
+        --adapter src/multivoice_reader/models/qwen3-1.7b
     ... --limit 100                                   # fewer examples, quicker
 
 Runs on MLX on a Mac and on PyTorch elsewhere; see backends.py.

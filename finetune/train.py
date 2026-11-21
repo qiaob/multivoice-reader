@@ -8,8 +8,8 @@ Two examples per step is what fits in 16 GB: four ran out of memory. A step take
 seconds on an M3, so a full run is several hours.
 
 Only the answer is trained on (the prompt is masked out). Output: finetune/adapter/.
-On an NVIDIA card use train_torch.py instead; it is far quicker, and it is what the adapter
-in this folder was trained with.
+On an NVIDIA card use train_torch.py instead; it is far quicker, and it is what the adapters
+in finetune/adapters/ were trained with.
 """
 
 import argparse

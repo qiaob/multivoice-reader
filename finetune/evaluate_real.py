@@ -1,7 +1,7 @@
 """Score a model on labelled passages from real novels (finetune/data/real/).
 
     uv run --no-project --python 3.11 --with mlx-lm python finetune/evaluate_real.py \\
-        --set finetune/data/real/valid.jsonl --adapter finetune/adapter
+        --set finetune/data/real/valid.jsonl --adapter src/multivoice_reader/models/qwen3-1.7b
     ... --model mlx-community/Qwen3.5-9B-MLX-4bit        # the untuned model, full instructions
 
 A speaker counts as right if it is the gold name or one of its accepted alternatives; lines
@@ -12,6 +12,7 @@ Runs on MLX on a Mac and on PyTorch elsewhere; see backends.py.
 import argparse
 import json
 import re
+import time
 from collections import defaultdict
 from pathlib import Path
 
@@ -40,7 +41,9 @@ def main() -> None:
         for i, prompt in enumerate(prompts):
             known, excerpt = re.match(r"已知角色：(.*?)\n\n(.*)\n\n标出", prompt, re.S).groups()
             prompts[i] = LABEL_PROMPT.format(known=known, excerpt=excerpt, emotions="、".join(EMOTIONS))
+    started = time.time()
     answers = generate(prompts, 40 * max(len(item["lines"]) for item in items) + 40)
+    took = time.time() - started
     per_book = defaultdict(lambda: [0, 0, 0])  # lines, speakers right, emotions right
     for item, answer in zip(items, answers, strict=True):
         found = {x.get("id"): x for x in _first_json(answer, "[", "]") or [] if isinstance(x, dict)}
@@ -58,6 +61,8 @@ def main() -> None:
     for book, (lines, speakers, emotions) in sorted(per_book.items()):
         print(f"{book[:14]:<16}{lines:>6}{speakers / lines:>8.0%}{emotions / lines:>8.0%}")
     print(f"{'合计':<16}{total[0]:>6}{total[1] / total[0]:>8.0%}{total[2] / total[0]:>8.0%}")
+    asked = sum(len(item["lines"]) for item in items)
+    print(f"用时 {took:.0f} 秒（不算加载模型），每秒 {asked / took:.1f} 句")
 
 
 if __name__ == "__main__":

@@ -228,8 +228,8 @@ audition/out/
 # Local books used for testing
 books/
 
-# Training checkpoints; only the final adapter is kept
-finetune/adapter/0*_adapters.safetensors
+# What train.py writes on a Mac; the weights that are kept are in finetune/adapters/
+finetune/adapter/
 
 .DS_Store
 finetune/runs/
