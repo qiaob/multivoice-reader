@@ -47,8 +47,8 @@ def batch_of(examples: list[tuple[list[int], list[int]]], pad: int) -> dict:
     return {"input_ids": ids.cuda(), "labels": labels.cuda(), "attention_mask": mask.cuda()}
 
 
-def load_split(tokenizer, name: str) -> list[tuple[list[int], list[int]]]:
-    rows = map(json.loads, (ROOT / "data" / f"{name}.jsonl").open(encoding="utf-8"))
+def load_split(tokenizer, path: Path) -> list[tuple[list[int], list[int]]]:
+    rows = map(json.loads, path.open(encoding="utf-8"))
     return [encode(tokenizer, row) for row in rows]
 
 
@@ -56,6 +56,9 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default=BASE)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument(
+        "--train", type=Path, default=ROOT / "data" / "train.jsonl", help="训练数据，格式同 data/train.jsonl"
+    )
     parser.add_argument("--iters", type=int, default=2000)
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--learning-rate", type=float, default=1e-4)
@@ -72,7 +75,8 @@ def main() -> None:
     )
     if not rendered.rstrip().endswith("答" + END):
         raise SystemExit(f"这个模型的聊天模板不是用 {END} 结束回答的：{rendered[-40:]!r}")
-    train, valid = load_split(tokenizer, "train"), load_split(tokenizer, "valid")[:VALID_EXAMPLES]
+    train = load_split(tokenizer, args.train)
+    valid = load_split(tokenizer, ROOT / "data" / "valid.jsonl")[:VALID_EXAMPLES]
     pad = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
 
     model = AutoModelForCausalLM.from_pretrained(args.base, dtype=torch.bfloat16, device_map="cuda")

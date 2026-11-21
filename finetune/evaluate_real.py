@@ -1,7 +1,7 @@
-"""Score a model on passages from real novels that were labelled by hand.
+"""Score a model on labelled passages from real novels (finetune/data/real/).
 
     uv run --no-project --python 3.11 --with mlx-lm python finetune/evaluate_real.py \\
-        --items books/eval/items --gold books/eval/gold.jsonl --adapter finetune/adapter
+        --set finetune/data/real/valid.jsonl --adapter finetune/adapter
     ... --model mlx-community/Qwen3.5-9B-MLX-4bit        # the untuned model, full instructions
 
 A speaker counts as right if it is the gold name or one of its accepted alternatives; lines
@@ -22,14 +22,19 @@ from multivoice_reader.analyze import EMOTIONS, LABEL_PROMPT, _clean_name, _firs
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--items", type=Path, required=True)
-    parser.add_argument("--gold", type=Path, required=True)
+    parser.add_argument("--set", type=Path, help="一个评测集文件，比如 finetune/data/real/valid.jsonl")
+    parser.add_argument("--items", type=Path, help="片段目录（和 --gold 一起用，代替 --set）")
+    parser.add_argument("--gold", type=Path)
     parser.add_argument("--model", default=BASE)
     parser.add_argument("--adapter", help="LoRA 权重目录；不给就按未微调的模型、用完整的说明来问")
     args = parser.parse_args()
-    gold = {row["id"]: row["labels"] for row in map(json.loads, args.gold.open(encoding="utf-8"))}
+    if args.set:
+        items = [json.loads(line) for line in args.set.open(encoding="utf-8")]
+        gold = {item["id"]: item["labels"] for item in items}
+    else:
+        gold = {row["id"]: row["labels"] for row in map(json.loads, args.gold.open(encoding="utf-8"))}
+        items = [json.loads(path.read_text(encoding="utf-8")) for path in sorted(args.items.glob("*.json"))]
     generate = load_generator(args.model, args.adapter)
-    items = [json.loads(path.read_text(encoding="utf-8")) for path in sorted(args.items.glob("*.json"))]
     prompts = [item["prompt"] for item in items]
     if not args.adapter:  # an untuned model needs the rules spelled out
         for i, prompt in enumerate(prompts):
