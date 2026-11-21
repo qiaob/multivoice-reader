@@ -40,7 +40,7 @@ class Chapter:
 
 @dataclass
 class Segment:
-    kind: str  # "narration" or "dialogue"
+    kind: str  # "narration", "dialogue", or "system": what a novel's "system" announces
     text: str
     para: int  # index of the paragraph it came from
 
@@ -122,10 +122,19 @@ def _is_speech(inner: str) -> bool:
     return len(inner) > 12 or (len(inner) >= 1 and inner[-1] in SPEECH_END)
 
 
+# A paragraph that is nothing but 【…】 is the system speaking: 【叮！获得能力：仙师天眼】.
+SYSTEM_TEXT = re.compile(r"(?:【[^【】]+】\s*)+")
+# Unless it is the author talking to the readers, which is set off the same way.
+AUTHOR_NOTE = re.compile(r"求收藏|求推荐|求月票|求订阅|求打赏|新书|加更|更新|作者|[Pp][Ss][:：]")
+
+
 def split_segments(paragraphs: list[str]) -> list[Segment]:
-    """Cut paragraphs into narration and dialogue, in reading order."""
+    """Cut paragraphs into narration, dialogue and system announcements, in reading order."""
     segments: list[Segment] = []
     for index, para in enumerate(paragraphs):
+        if SYSTEM_TEXT.fullmatch(para) and not AUTHOR_NOTE.search(para):
+            segments.extend(Segment("system", c, index) for c in _chunks(para, NARRATION_CHARS))
+            continue
         narration = ""
         cursor = 0
 

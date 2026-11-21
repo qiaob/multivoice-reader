@@ -48,6 +48,8 @@ def main() -> None:
             check=True,
         )
         config = {key: voice[key] for key in ("name", "gender", "age", "kind")}
+        if voice.get("genre"):
+            config["genre"] = voice["genre"]
         config |= {"desc": voice["instruct"], "ref_audio": "ref.wav", "ref_text": ref_text}
         (folder / "voice.json").write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
         made += 1

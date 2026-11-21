@@ -59,6 +59,9 @@ h1 { margin: 0; font: 700 1.35rem/1 var(--serif); letter-spacing: .01em; }
 
 #cast { border-left: 1px solid var(--line); }
 #cast h2 { margin: 0; font: 700 1.1rem/1.4 var(--serif); }
+#cast label.genre { display: flex; align-items: center; gap: 10px; font-size: .9rem; }
+#cast label.genre select { flex: 1; min-width: 0; padding: 4px 6px; border: 1px solid var(--line);
+                           border-radius: 4px; background: var(--sheet); font-size: .85rem; }
 #castList { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--ink); }
 #castList li { padding: 10px 0; border-bottom: 1px solid var(--line); }
 #castList b { font: 700 1rem var(--serif); }

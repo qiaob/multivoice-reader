@@ -3,6 +3,7 @@
     拆分        novels -> reading scripts (book.py, split.py)
     朗读        reading scripts -> speech, with a voice for each character (reading.py, worker.py)
     声音试听     the voice library (voices.py)
+    声音设计     a new voice from a description of it (design.py)
     声音复刻     a new voice from a recording (clone.py)
 
 Many novels and many scripts are kept side by side; every request says which one it means.
@@ -25,9 +26,11 @@ from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 from .analyze import DEFAULT_MODEL, MODELS
 from .book import Book
+from .casting import GENRES
+from .design import MAX_TEXT_CHARS, MIN_TEXT_CHARS, SAMPLE_TEXT, discard, draft, drafts, keep
 from .reading import Reading, folder_of, whole_queue
-from .script import NARRATOR, dumps, normalize
-from .voices import REF_MAX_SECONDS, export_pack, import_pack, library, remove_voice
+from .script import AGES, GENDERS, NARRATOR, UNKNOWN, dumps, normalize
+from .voices import REF_MAX_SECONDS, export_pack, home, import_pack, library, remove_voice
 from .worker import caster, next_job, segment_audio_key
 
 WEB = Path(__file__).parent / "web"
@@ -159,6 +162,24 @@ class App:
             return ""
         lines = (done.stderr.strip() or done.stdout.strip()).splitlines()
         return lines[-1] if lines else "复刻失败"
+
+    def design(self, desc: str, gender: str, age: str, text: str) -> tuple[str, str]:
+        """Design a voice in a process of its own; returns (draft id, what went wrong).
+        The caller holds self.cloning, as for cloning: one model at a time."""
+        self.close()
+        draft_id = f"{time.time_ns():x}"
+        command = [sys.executable, "-m", "multivoice_reader.design", "--gender", gender, "--age", age]
+        command += ["--out", str(home() / "designs" / draft_id), "--text", text, "--", desc]
+        try:
+            done = subprocess.run(
+                command, capture_output=True, text=True, timeout=CLONE_TIMEOUT_S, check=False
+            )
+        except subprocess.TimeoutExpired:
+            return "", "设计超时"
+        if done.returncode == 0:
+            return draft_id, ""
+        lines = (done.stderr.strip() or done.stdout.strip()).splitlines()
+        return "", lines[-1] if lines else "设计失败"
 
     # ---- the split page ----
     def book_view(self, book: Book, queue: list[str]) -> dict:
@@ -390,6 +411,20 @@ class Handler(SimpleHTTPRequestHandler):
             if path is None or not sample_id.removesuffix(".mp3").isalnum() or not path.is_file():
                 return self.reply(404, {"error": "没有这段试读"})
             return self.send_file(path, "audio/mpeg")
+        if route == "/api/designs":
+            made = [
+                {"id": v.id, "desc": v.desc, "gender": v.gender, "age": v.age, "text": v.ref_text}
+                for v in drafts()
+            ]
+            limits = {"sample_text": SAMPLE_TEXT, "text_chars": [MIN_TEXT_CHARS, MAX_TEXT_CHARS]}
+            return self.reply(200, {"designs": made, "genders": GENDERS, "ages": AGES, **limits})
+        if route.startswith("/design-ref/"):
+            try:
+                return self.send_file(
+                    draft(unquote(route.removeprefix("/design-ref/"))).ref_audio, "audio/wav"
+                )
+            except LookupError as err:
+                return self.reply(404, {"error": str(err)})
         if route == "/api/split/books":
             app.settle()
             return self.reply(200, {"books": app.books(), "cloning": app.cloning.locked()})
@@ -415,7 +450,17 @@ class Handler(SimpleHTTPRequestHandler):
         if reading is None:
             return
         if route == "/api/reading":
-            return self.reply(200, {"id": reading.id, "title": reading.title, "chapters": reading.chapters})
+            genres = [{"id": genre, "name": about["name"]} for genre, about in GENRES.items()]
+            return self.reply(
+                200,
+                {
+                    "id": reading.id,
+                    "title": reading.title,
+                    "chapters": reading.chapters,
+                    "genre": reading.genre(),
+                    "genres": genres,
+                },
+            )
         if route == "/api/chapter":
             index = int(query.get("k", "0"))
             if not 0 <= index < len(reading.chapters):
@@ -473,6 +518,18 @@ class Handler(SimpleHTTPRequestHandler):
             except LookupError as err:
                 return self.reply(404, {"error": str(err)})
             return self.reply(204)
+        if route == "/api/design":
+            return self.design_voice(data)
+        if route in ("/api/designs/keep", "/api/designs/remove"):
+            try:
+                if route.endswith("/remove"):
+                    discard(str(data.get("id")))
+                    return self.reply(204)
+                return self.reply(200, {"id": keep(str(data.get("id")), str(data.get("name") or "")).id})
+            except LookupError as err:
+                return self.reply(404, {"error": str(err)})
+            except ValueError as err:
+                return self.reply(400, {"error": str(err)})
         if route.startswith("/api/split/"):
             book = self.the_book(data.get("id"))
             return self.post_split(route.removeprefix("/api/split/"), book, data) if book else None
@@ -498,6 +555,12 @@ class Handler(SimpleHTTPRequestHandler):
             else:  # no voice given: back to the automatic choice
                 cast.pop(str(data.get("name")), None)
             reading.save_cast(cast)
+            return self.reply(200, app.cast(reading))
+        if route == "/api/genre":  # read it as this kind of story; "" is no kind in particular
+            genre = str(data.get("genre") or "")
+            if genre and genre not in GENRES:
+                return self.reply(400, {"error": f"没有「{genre}」这个题材"})
+            reading.save_genre(genre)
             return self.reply(200, app.cast(reading))
         self.reply(404, {"error": "not found"})
 
@@ -575,6 +638,26 @@ class Handler(SimpleHTTPRequestHandler):
         if error:
             return self.reply(500, {"error": error})
         self.reply(200, {"ok": True})
+
+    def design_voice(self, data: dict) -> None:
+        desc, text = str(data.get("desc") or "").strip(), str(data.get("text") or "").strip()
+        gender, age = str(data.get("gender") or UNKNOWN), str(data.get("age") or UNKNOWN)
+        if not desc:
+            return self.reply(400, {"error": "请描述一下想要的声音"})
+        if gender not in GENDERS or age not in AGES:
+            return self.reply(400, {"error": "性别或年龄段不对"})
+        if text and not MIN_TEXT_CHARS <= len(text) <= MAX_TEXT_CHARS:
+            return self.reply(400, {"error": f"试读的话要在 {MIN_TEXT_CHARS} 到 {MAX_TEXT_CHARS} 个字之间"})
+        if not self.app.cloning.acquire(blocking=False):
+            return self.reply(409, {"error": "正在设计或复刻另一个声音，请等它结束"})
+        try:
+            draft_id, error = self.app.design(desc, gender, age, text)
+        finally:
+            self.app.cloning.release()
+            self.app.settle()
+        if error:
+            return self.reply(500, {"error": error})
+        self.reply(200, {"id": draft_id})
 
     def import_voice(self) -> None:
         body = self.read_body("application/octet-stream", MAX_PACK_BYTES)

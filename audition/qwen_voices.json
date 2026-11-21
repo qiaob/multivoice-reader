@@ -23,5 +23,16 @@
   {"id": "f_sharp", "name": "泼辣妇人", "gender": "女", "age": "中年", "kind": "character", "instruct": "四十多岁的中年妇女，嗓门大而尖利，语速快，泼辣强势，标准普通话"},
   {"id": "f_boss", "name": "干练女强人", "gender": "女", "age": "青年", "kind": "character", "instruct": "三十多岁女性，声音干脆利落，语气果断冷静，职业而有气场，标准普通话"},
   {"id": "f_elder", "name": "慈祥老妇", "gender": "女", "age": "老年", "kind": "character", "instruct": "七十多岁的老奶奶，声音苍老温和，语速缓慢，慈祥絮叨，标准普通话"},
-  {"id": "f_girl", "name": "小女孩", "gender": "女", "age": "儿童", "kind": "character", "instruct": "六七岁的小女孩，童声奶声奶气，语气天真软糯，标准普通话"}
+  {"id": "f_girl", "name": "小女孩", "gender": "女", "age": "儿童", "kind": "character", "instruct": "六七岁的小女孩，童声奶声奶气，语气天真软糯，标准普通话"},
+  {"id": "sus_n_m", "name": "悬疑男旁白", "gender": "男", "age": "中年", "kind": "narrator", "genre": "suspense", "instruct": "四十多岁男性，嗓音低沉，语速缓慢，句与句之间有停顿，带着压抑和悬念感，像深夜讲鬼故事，吐字清晰，标准普通话", "style": "压低声音缓慢地讲述，语速很慢，留有停顿，气氛阴冷", "pace": "slow"},
+  {"id": "sus_m_lead", "name": "冷静男主", "gender": "男", "age": "青年", "kind": "character", "genre": "suspense", "instruct": "二十七八岁男性，声音低而冷静，语速偏慢，克制谨慎，吐字清晰，标准普通话", "style": "冷静克制地说话，语速偏慢，带着警觉", "pace": "slow"},
+  {"id": "sus_f_lead", "name": "警觉女主", "gender": "女", "age": "青年", "kind": "character", "genre": "suspense", "instruct": "二十出头的女性，声音轻而清亮，语速偏慢，带着不安和警觉，吐字清晰，标准普通话", "style": "轻声而警觉地说话，语速偏慢，带着不安", "pace": "slow"},
+  {"id": "sus_ghost", "name": "幽冷女声", "gender": "女", "age": "青年", "kind": "character", "genre": "suspense", "instruct": "年轻女性，声音幽冷飘忽，语速很慢，尾音拖长，令人不寒而栗，吐字清晰，标准普通话", "style": "幽幽地缓慢说话，语速很慢，冰冷没有温度", "pace": "slow"},
+  {"id": "sys_n_m", "name": "爽文男旁白", "gender": "男", "age": "青年", "kind": "narrator", "genre": "system", "instruct": "二十多岁男性，声音明亮有力，语速偏快，节奏干脆，带一点戏谑和吐槽感，吐字清晰，标准普通话", "style": "语速偏快、干脆利落地讲述，带着轻松的戏谑", "pace": "fast"},
+  {"id": "sys_m_lead", "name": "张扬男主", "gender": "男", "age": "青年", "kind": "character", "genre": "system", "instruct": "二十岁出头的男性，声音清亮自信，语速偏快，张扬不服输，吐字清晰，标准普通话", "style": "自信张扬地说话，语速偏快，干脆有力", "pace": "fast"},
+  {"id": "sys_f_lead", "name": "飒爽女主", "gender": "女", "age": "青年", "kind": "character", "genre": "system", "instruct": "二十岁出头的女性，声音清脆利落，语速偏快，自信飒爽，吐字清晰，标准普通话", "style": "干脆利落地说话，语速偏快，自信", "pace": "fast"},
+  {"id": "sys_system", "name": "系统提示音", "gender": "女", "age": "青年", "kind": "system", "genre": "", "instruct": "年轻女性，声音平直冷静，没有感情起伏，像电子合成的系统提示音，语速均匀，吐字清晰，标准普通话", "style": "平直机械地播报，语速均匀，没有任何情绪"},
+  {"id": "rom_n_f", "name": "言情女旁白", "gender": "女", "age": "青年", "kind": "narrator", "genre": "romance", "instruct": "二十七八岁女性，声音温柔细腻，语速舒缓，娓娓道来，带着淡淡的情绪，吐字清晰，标准普通话", "style": "温柔舒缓地讲述，娓娓道来，带着淡淡的情绪"},
+  {"id": "rom_m_lead", "name": "温柔男主", "gender": "男", "age": "青年", "kind": "character", "genre": "romance", "instruct": "二十七八岁男性，声音低沉温柔有磁性，语速舒缓，吐字清晰，标准普通话", "style": "低沉温柔地说话，语速舒缓，深情"},
+  {"id": "rom_f_lead", "name": "柔和女主", "gender": "女", "age": "青年", "kind": "character", "genre": "romance", "instruct": "二十出头的女性，声音柔和甜美，语气真挚，吐字清晰，标准普通话", "style": "柔和真挚地说话，语速适中，带着温暖"}
 ]

@@ -29,7 +29,7 @@ def caster(reading: Reading, voices: dict[str, Voice]) -> Callable[[str], str]:
     casting, else the narrator's voice."""
     chosen, assigned = reading.cast(), reading.assigned(voices)
     narrator = chosen.get(NARRATOR)
-    narrator = narrator if narrator in voices else narrator_voice(voices)
+    narrator = narrator if narrator in voices else narrator_voice(voices, reading.genre())
 
     def voice_of(speaker: str) -> str:
         if chosen.get(speaker) in voices:

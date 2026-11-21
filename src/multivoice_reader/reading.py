@@ -104,11 +104,21 @@ class Reading:
     def save_cast(self, cast: dict[str, str]) -> None:
         write_json(self.dir / "cast.json", cast)
 
+    def genre(self) -> str:
+        """The kind of story the listener said this is (see casting.GENRES); "" if they did not."""
+        return read_json(self.dir / "genre.json", {}).get("genre", "")
+
+    def save_genre(self, genre: str) -> None:
+        """Read it as another kind of story. The automatic casting is done over, so that the
+        new kind's voices are used; what the listener chose themselves stays."""
+        write_json(self.dir / "genre.json", {"genre": genre})
+        (self.dir / "assigned.json").unlink(missing_ok=True)
+
     def assigned(self, voices: dict[str, Voice]) -> dict[str, str]:
         """The automatic casting. A character keeps the voice it was first given; only
         characters that are new, or whose voice is gone, are given one now."""
         before = read_json(self.dir / "assigned.json", {})
-        now = assign(self.characters(), voices, before, self.cast().get(NARRATOR))
+        now = assign(self.characters(), voices, before, self.cast().get(NARRATOR), self.genre())
         if now != before:
             write_json(self.dir / "assigned.json", now)
         return now

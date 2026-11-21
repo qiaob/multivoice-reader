@@ -4,6 +4,7 @@ mvr split 小说.txt -o 脚本.json       a novel -> a reading script (who says 
     ... --model qwen3-1.7b           with another of the labelling models
 mvr generate 脚本.json -o 目录        a reading script -> one audio file per chapter
 mvr voices                           list the voices there are to cast from
+mvr design 描述 -o 目录/名字         a voice of your own from a description of it
 mvr web                              the same two jobs in the browser, plus the voice library and cloning
 
 The two commands know nothing of each other: split writes a script, generate reads any
@@ -15,6 +16,8 @@ import webbrowser
 from pathlib import Path
 
 from .analyze import DEFAULT_MODEL, MODELS
+from .casting import GENRES
+from .script import AGES, GENDERS, UNKNOWN
 from .voices import library
 
 PORT = 8766
@@ -56,7 +59,9 @@ def generate_command(args: argparse.Namespace) -> None:
         cast[NARRATOR] = args.narrator
     out = args.out.expanduser().resolve()
     try:
-        written = generate(existing(args.script), out, voice_dirs(args), args.chapters, cast)
+        written = generate(
+            existing(args.script), out, voice_dirs(args), args.chapters, cast, genre=args.genre
+        )
     except ValueError as err:
         raise SystemExit(str(err)) from err
     print(f"完成：{len(written)} 个音频文件在 {out}")
@@ -64,8 +69,20 @@ def generate_command(args: argparse.Namespace) -> None:
 
 def voices_command(args: argparse.Namespace) -> None:
     for voice in library(voice_dirs(args)).values():
-        mine = "（我的）" if voice.kind == "clone" else ""
+        mine = {"clone": "（复刻的）", "design": "（设计的）"}.get(voice.kind, "")
         print(f"{voice.id:<18}{voice.name}{mine}　{voice.gender}　{voice.age}　{voice.desc[:30]}")
+
+
+def design_command(args: argparse.Namespace) -> None:
+    from .design import design
+
+    out = args.out.expanduser().resolve()
+    try:
+        voice = design(args.desc, out, args.name, args.gender, args.age, args.text)
+    except ValueError as err:
+        raise SystemExit(str(err)) from err
+    print(f"完成：「{voice.name}」在 {out}，录音是 {voice.ref_audio.name}，可以直接听")
+    print(f"朗读时用它：mvr generate 脚本.json -o 输出目录 --voices {out.parent} --narrator {voice.name}")
 
 
 def web_command(args: argparse.Namespace) -> None:
@@ -111,12 +128,31 @@ def main() -> None:
     generate.add_argument(
         "--cast", action="append", default=[], metavar="角色=声音", help="指定一个角色的声音，可以给多次"
     )
+    genres = "、".join(f"{genre}（{about['name']}）" for genre, about in GENRES.items())
+    generate.add_argument(
+        "--genre",
+        choices=list(GENRES),
+        help=f"按哪种题材来读：旁白和自动配的角色用那个题材的声音。{genres}；不给就不分题材",
+    )
     generate.set_defaults(run=generate_command)
 
     voices = commands.add_parser("voices", parents=[more_voices], help="列出可以用的声音")
     voices.set_defaults(run=voices_command)
 
-    web = commands.add_parser("web", parents=[more_voices], help="打开网页：拆分、朗读、声音试听、声音复刻")
+    design = commands.add_parser("design", help="按一段描述设计一个声音；每次生成的都不一样，可以多做几个挑")
+    design.add_argument("desc", help="想要的声音，比如：四十多岁男性，嗓音低沉，语速缓慢，吐字清晰")
+    design.add_argument(
+        "-o", "--out", type=Path, required=True, help="这个声音的目录；它的上一级目录可以交给 --voices"
+    )
+    design.add_argument("--name", default="", help="声音的名字；默认用目录名")
+    design.add_argument("--gender", default=UNKNOWN, choices=GENDERS, help="性别，只用来显示")
+    design.add_argument("--age", default=UNKNOWN, choices=AGES, help="年龄段，只用来显示")
+    design.add_argument("--text", default="", help="生成录音时读的话，15 到 80 个字；默认是一段旁白")
+    design.set_defaults(run=design_command)
+
+    web = commands.add_parser(
+        "web", parents=[more_voices], help="打开网页：拆分、朗读、声音试听、声音设计、声音复刻"
+    )
     web.add_argument("--port", type=int, default=PORT)
     web.add_argument("--no-browser", action="store_true", help="不自动打开浏览器")
     web.set_defaults(run=web_command)

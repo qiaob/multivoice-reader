@@ -10,6 +10,7 @@
     <a href="/split.html">拆分</a>
     <a aria-current="page" href="/">朗读</a>
     <a href="/voices.html">声音试听</a>
+    <a href="/design.html">声音设计</a>
     <a href="/clone.html">声音复刻</a>
   </nav>
   <span id="status" role="status"></span>
@@ -43,6 +44,8 @@
   <aside id="cast" aria-label="角色和声音">
     <h2>谁用哪个声音</h2>
     <p class="hint">声音是按角色的性别和年龄自动选的，可以改。改了之后，这个角色的台词会重新合成。</p>
+    <label class="genre">题材<select id="genre"></select></label>
+    <p class="hint">选了题材，旁白和自动选的角色会换成那个题材的声音；自己选过的不变。</p>
     <ul id="castList"></ul>
   </aside>
 </main>

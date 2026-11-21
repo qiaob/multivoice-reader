@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>声音设计 · multivoice-reader</title>
+<link rel="stylesheet" href="reader.css">
+<link rel="stylesheet" href="voices.css">
+<header class="top">
+  <h1>multivoice-reader</h1>
+  <nav class="tabs">
+    <a href="/split.html">拆分</a>
+    <a href="/">朗读</a>
+    <a href="/voices.html">声音试听</a>
+    <a aria-current="page" href="/design.html">声音设计</a>
+    <a href="/clone.html">声音复刻</a>
+  </nav>
+  <span id="status" role="status"></span>
+</header>
+
+<main class="library">
+  <div class="wrap clone-layout">
+    <form id="design"><ol class="steps">
+      <li><h3>描述想要的声音</h3>
+        <textarea name="desc" rows="4" aria-label="描述" required
+          placeholder="比如：四十多岁男性，嗓音低沉，语速缓慢，句与句之间有停顿，像深夜讲鬼故事，吐字清晰，标准普通话"></textarea>
+        <p class="hint">把性别、年龄、音色、语速和说话的感觉写出来，写得越具体越接近想要的。</p>
+        <div class="pair">
+          <label class="field">性别<select name="gender"></select></label>
+          <label class="field">年龄<select name="age"></select></label>
+        </div>
+        <p class="hint">这两项只用来在列表里显示，声音本身由上面的描述决定。</p></li>
+      <li><h3>让它读一段话</h3>
+        <textarea name="text" rows="3" aria-label="试读的话"></textarea>
+        <p class="hint" id="textHint"></p></li>
+      <li><h3>生成</h3>
+        <button type="submit" class="primary">生成一个</button>
+        <p id="designStatus" role="status"></p>
+        <p class="hint">全程在这台电脑上处理，声音是模型造出来的，不是任何真人的。同一段描述每次生成的都不一样，不满意就再生成一个。第一次要下载 4.2 GB 的模型。生成期间朗读页的准备会暂停，做完自动继续。</p></li>
+    </ol></form>
+    <section class="group">
+      <h2>设计出来的<small id="draftCount"></small></h2>
+      <p>先听，满意的起个名字收藏，它就会出现在朗读页的「谁用哪个声音」里。没收藏的只留在这一页。</p>
+      <ul class="voices" id="draftList"></ul>
+      <p class="empty" id="draftEmpty" hidden>还没有。在左边写一段描述，生成的声音会出现在这里。</p>
+    </section>
+  </div>
+</main>
+<script src="design.js"></script>
+</html>

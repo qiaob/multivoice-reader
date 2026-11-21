@@ -22,8 +22,8 @@ SCRIPT = {
 }
 
 
-def voice(id, gender, age, kind="character"):
-    return Voice(id, id, gender, age, kind, "", Path("ref.wav"), "x")
+def voice(id, gender, age, kind="character", genre=""):
+    return Voice(id, id, gender, age, kind, "", Path("ref.wav"), "x", genre=genre)
 
 
 VOICES = {
@@ -88,3 +88,17 @@ def test_audio_key_changes_with_voice_and_emotion():
     base = audio_key("ming", "v1", "中性", "你好")
     assert base == audio_key("ming", "v1", "中性", "你好")
     assert len({base, audio_key("ming", "v2", "中性", "你好"), audio_key("ming", "v1", "愤怒", "你好")}) == 3
+
+
+def test_a_genre_recasts_what_was_automatic_and_leaves_what_the_listener_chose(reading):
+    voices = VOICES | {
+        "sus_n_m": voice("sus_n_m", "男", "中年", "narrator", "suspense"),
+        "sus_f": voice("sus_f", "女", "青年", "character", "suspense"),
+    }
+    reading.save_cast({"张三": "mine"})
+    assert caster(reading, voices)("李四") == "f_lively" and reading.genre() == ""
+    reading.save_genre("suspense")
+    voice_of = caster(reading, voices)
+    assert (voice_of("旁白"), voice_of("张三"), voice_of("李四")) == ("sus_n_m", "mine", "sus_f")
+    reading.save_genre("")
+    assert caster(reading, voices)("旁白") == "n_m_passion" and caster(reading, voices)("李四") == "f_lively"

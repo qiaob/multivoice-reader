@@ -17,7 +17,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from .book import Book
-from .script import NARRATOR, chapter_range, dumps, load, normalize
+from .script import NARRATOR, SYSTEM, UNKNOWN, chapter_range, dumps, load, normalize
 from .text import read_text, split_chapters, split_segments
 
 
@@ -27,9 +27,10 @@ def split_chapter(paragraphs: list[str], characters: dict[str, dict], analyzer) 
     labels = analyzer.label(segments, list(characters))
     spoken = Counter(label["speaker"] for label in labels if label["speaker"] != NARRATOR)
     new = [name for name in spoken if name not in characters]
-    profiles = analyzer.profiles(segments, new)
+    profiles = analyzer.profiles(segments, [name for name in new if name != SYSTEM])
+    nobody = {"gender": UNKNOWN, "age": UNKNOWN}  # the system is not a person
     for name in new:
-        characters[name] = {**profiles[name], "lines": 0}
+        characters[name] = {**profiles.get(name, nobody), "lines": 0}
     for name, count in spoken.items():
         characters[name]["lines"] += count
     return [

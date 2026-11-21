@@ -4,6 +4,7 @@
 const $ = (id) => document.getElementById(id);
 const POLL_MS = 1500;
 const NARRATOR = '旁白';
+const SYSTEM = '系统';
 const audio = new Audio();
 const readingId = new URLSearchParams(location.search).get('id');
 const withId = 'id=' + encodeURIComponent(readingId || '');
@@ -90,7 +91,7 @@ async function refreshList() {
   for (const [id, parts] of rows) if (!seen.has(id)) { parts.row.remove(); rows.delete(id); }
   $('bookTable').hidden = data.readings.length === 0;
   $('shelfEmpty').hidden = data.readings.length > 0;
-  $('status').textContent = data.cloning ? '正在复刻声音，合成先停一下' : '';
+  $('status').textContent = data.cloning ? '正在设计或复刻声音，合成先停一下' : '';
 }
 $('bookFile').addEventListener('change', async (e) => {
   const files = [...e.target.files];
@@ -154,7 +155,8 @@ function renderText() {
       const feeling = segment.emotion === '中性' ? '' : `（${segment.emotion}）`;
       paragraph.append(Object.assign(document.createElement('span'), {
         className: 'who', textContent: segment.speaker + feeling }));
-      span.textContent = `“${segment.text}”`;
+      // What the system announces is set off by brackets of its own, not by quotation marks.
+      span.textContent = segment.speaker === SYSTEM ? segment.text : `“${segment.text}”`;
     } else {
       span.textContent = segment.text;
     }
@@ -184,7 +186,7 @@ function describe(status) {
   $('toggle').textContent = playing ? '暂停' : '播放';
   let note = '';
   if (status.state === 'error') note = '后台出错了：' + status.message;
-  else if (status.state === 'paused') note = '正在复刻声音，合成先停一下，复刻完自动继续。';
+  else if (status.state === 'paused') note = '正在设计或复刻声音，合成先停一下，做完自动继续。';
   else if (playing && waiting) note = '这一句还在合成，好了会自动接着读。';
   $('pageNote').textContent = note;
   const states = { speaking: '正在合成', idle: '这几章都准备好了', error: '后台出错了', paused: '合成暂停中' };
@@ -261,7 +263,10 @@ const preview = new Audio();
 let previewing = null;
 preview.addEventListener('ended', () => { if (previewing) previewing.classList.remove('playing'); previewing = null; });
 function voiceOptions(selected, chosen) {
-  const groups = [['内置的声音', (v) => v.kind !== 'clone'], ['我的声音', (v) => v.kind === 'clone']];
+  const mine = (v) => ['clone', 'design'].includes(v.kind);
+  const groups = [['通用的声音', (v) => !mine(v) && !v.genre],
+    ...app.reading.genres.map((genre) => [genre.name + '的声音', (v) => !mine(v) && v.genre === genre.id]),
+    ['我设计的声音', (v) => v.kind === 'design'], ['我复刻的声音', (v) => v.kind === 'clone']];
   const select = document.createElement('select');
   select.setAttribute('aria-label', '声音');
   if (chosen) select.append(new Option('恢复自动选择', ''));
@@ -313,10 +318,22 @@ async function refreshCast() {
   }));
 }
 
+// What kind of story this is: its narrator and the voices its characters are given first.
+function showGenre() {
+  $('genre').replaceChildren(new Option('不分题材', ''),
+    ...app.reading.genres.map((genre) => new Option(genre.name, genre.id)));
+  $('genre').value = app.reading.genre;
+}
+$('genre').addEventListener('change', async () => {
+  await post('/api/genre', { id: readingId, genre: $('genre').value });
+  $('genre').blur(); castJson = ''; refresh();
+});
+
 // ---- start ----
 if (readingId) {
   Promise.all([api('/api/reading?' + withId), api('/api/voices')]).then(([reading, library]) => {
     app = { reading, voices: library.voices };
+    showGenre();
     document.title = reading.title + ' · 朗读 · multivoice-reader';
     showReader();
   }).catch(() => location.replace('/'));

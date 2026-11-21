@@ -70,7 +70,8 @@ def main() -> None:
                 model.generate_voice_design(
                     text=clip["text"],
                     language="Chinese",
-                    instruct=f"{voice['instruct']}。{clip['style']}。",
+                    # A voice made for a kind of story reads in that story's manner.
+                    instruct=f"{voice['instruct']}。{voice.get('style') or clip['style']}。",
                 )
             )
             audio = np.concatenate([np.array(r.audio) for r in results])
