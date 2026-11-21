@@ -1,12 +1,14 @@
 """Fine-tune on an NVIDIA card (PyTorch + PEFT LoRA). Same data and same prompt as train.py.
 
-    python finetune/train_torch.py --base Qwen/Qwen3-1.7B --out finetune/runs/qwen3-1.7b
-    ... --iters 500 --batch-size 8
-    ... --grad-checkpoint            # for models that do not fit in the card's memory otherwise
+    python finetune/train_torch.py --out finetune/runs/qwen3-1.7b --grad-checkpoint
+    ... --base Qwen/Qwen3-0.6B --iters 500 --batch-size 8
+
+--grad-checkpoint is what makes 1.7B and larger fit in 16 GB of card memory; 0.6B fits without.
 
 Needs torch (a CUDA build), transformers and peft. Only the answer is trained on. Every
 --save-every steps the loss on the validation set is printed and the LoRA is saved to
-<out>/step-NNNNN, which evaluate.py and evaluate_real.py take as --adapter.
+<out>/step-NNNNN, which evaluate.py and evaluate_real.py take as --adapter. To use one on a
+Mac, convert it with peft_to_mlx.py. The defaults take about 25 minutes on an RTX 5070 Ti.
 """
 
 import argparse
@@ -54,11 +56,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default=BASE)
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--iters", type=int, default=1000)
+    parser.add_argument("--iters", type=int, default=2000)
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--learning-rate", type=float, default=1e-4)
     parser.add_argument("--rank", type=int, default=16)
-    parser.add_argument("--save-every", type=int, default=250)
+    parser.add_argument("--save-every", type=int, default=200)
     parser.add_argument("--grad-checkpoint", action="store_true", help="省显存，慢一些；大模型需要")
     args = parser.parse_args()
 

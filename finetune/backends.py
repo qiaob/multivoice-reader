@@ -12,7 +12,9 @@ from multivoice_reader.analyze import chat_prompt
 ON_MAC = sys.platform == "darwin"
 # Qwen3.5 would be the newer small model, but most of its layers are linear attention, which MLX
 # trains with a per-token loop: over 20 GB for a 1000-token example. Qwen3 is plain attention.
-BASE = "mlx-community/Qwen3-0.6B-4bit" if ON_MAC else "Qwen/Qwen3-0.6B"
+# 1.7B is the smallest that gets close to the big untuned model on real novels; 0.6B stays
+# some ten points behind on who is speaking.
+BASE = "mlx-community/Qwen3-1.7B-4bit" if ON_MAC else "Qwen/Qwen3-1.7B"
 
 
 TORCH_BATCH = 8
