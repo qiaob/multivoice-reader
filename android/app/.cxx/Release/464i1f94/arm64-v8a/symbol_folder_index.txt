@@ -1,1 +1,0 @@
-/home/user/multivoice-reader/android/app/build/intermediates/cxx/Release/464i1f94/obj/arm64-v8a
