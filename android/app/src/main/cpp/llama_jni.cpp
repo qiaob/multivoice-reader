@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstring>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -20,12 +21,23 @@ namespace {
 // What llama.cpp says while it works (loading, errors), kept so the app's log page can show it.
 std::mutex log_lock;
 std::string log_text;
+int repack_fallbacks = 0;  // one line per adapter tensor otherwise: counted instead
 constexpr size_t LOG_KEEP = 48 * 1024;
 
 void on_log(ggml_log_level level, const char * text, void *) {
     if (level == GGML_LOG_LEVEL_DEBUG) return;
     __android_log_print(level == GGML_LOG_LEVEL_ERROR ? ANDROID_LOG_ERROR : ANDROID_LOG_INFO, "llama.cpp", "%s", text);
     std::lock_guard<std::mutex> hold(log_lock);
+    if (strstr(text, "cannot use buft")) {
+        // The base weights are repacked for the CPU's matrix instructions; the adapter's small
+        // matrices stay in plain memory. Harmless, and said once per tensor.
+        repack_fallbacks++;
+        return;
+    }
+    if (repack_fallbacks) {
+        log_text += "（" + std::to_string(repack_fallbacks) + " 个微调张量留在普通内存里，底座用重排过的格式）\n";
+        repack_fallbacks = 0;
+    }
     log_text += text;
     if (log_text.size() > LOG_KEEP) log_text.erase(0, log_text.size() - LOG_KEEP / 2);
 }
@@ -79,6 +91,7 @@ Java_io_github_qiaob_multivoice_llm_Llama_nativeLoad(
     if (!started) {
         llama_log_set(on_log, nullptr);
         llama_backend_init();
+        on_log(GGML_LOG_LEVEL_INFO, (std::string("system_info: ") + llama_print_system_info() + "\n").c_str(), nullptr);
         started = true;
     }
     auto * e = new Engine();

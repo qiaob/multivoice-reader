@@ -90,8 +90,8 @@ private fun ModelCard(model: LabelModel) {
     var ready by remember { mutableStateOf(Models.ready(context, model)) }
     var progress by remember { mutableStateOf(Models.progress(context, model)) }
     var importing by remember { mutableStateOf<Long?>(null) }
-    var trying by remember { mutableStateOf(false) }
-    var tried by remember { mutableStateOf<TryResult?>(null) }
+    val tries by Splitter.tries.collectAsState()
+    val attempt = tries[model.id]
     var error by remember { mutableStateOf<String?>(null) }
     var custom by remember { mutableStateOf("") }
     LaunchedEffect(tick) {
@@ -162,28 +162,20 @@ private fun ModelCard(model: LabelModel) {
             if (ready) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
-                        enabled = !trying && !split.running,
-                        onClick = {
-                            trying = true
-                            error = null
-                            scope.launch {
-                                try {
-                                    tried = withContext(Dispatchers.Default) { Splitter.tryModel(context, model) }
-                                } catch (e: Throwable) {
-                                    error = AppLog.error("试 ${model.name}", e) + "（详情见「日志」页）"
-                                }
-                                trying = false
-                            }
-                        },
-                    ) { Text(if (trying) "正在试…" else "用一段示例试一下") }
-                    TextButton(enabled = !trying && !split.running, onClick = { Models.remove(context, model); ready = false; tried = null }) {
+                        enabled = attempt?.running != true && !split.running,
+                        onClick = { error = null; Splitter.startTry(context, model) },
+                    ) { Text(if (attempt?.running == true) "正在试…" else "用一段示例试一下") }
+                    TextButton(
+                        enabled = attempt?.running != true && !split.running,
+                        onClick = { Models.remove(context, model); ready = false; Splitter.clearTry(model) },
+                    ) {
                         Text("删除模型文件")
                     }
                 }
-                if (trying) CircularProgressIndicator()
+                if (attempt?.running == true) CircularProgressIndicator()
             }
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            tried?.let { TryCard(it) }
+            (error ?: attempt?.error)?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            attempt?.result?.let { TryCard(it) }
         }
     }
 }

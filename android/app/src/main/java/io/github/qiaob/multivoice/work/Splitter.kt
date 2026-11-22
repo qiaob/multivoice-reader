@@ -57,7 +57,51 @@ data class TryResult(
     val templateWarning: String?,
 )
 
+/** What the phone was doing, in words: background apps run on slower cores, and hot ones slow down. */
+fun deviceState(context: Context): String {
+    val info = android.app.ActivityManager.RunningAppProcessInfo()
+    android.app.ActivityManager.getMyMemoryState(info)
+    val place = when {
+        info.importance <= android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND -> "前台"
+        info.importance <= android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE -> "后台（前台服务）"
+        else -> "后台"
+    }
+    val power = context.getSystemService(PowerManager::class.java)
+    val battery = context.registerReceiver(null, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+    val temperature = (battery?.getIntExtra(android.os.BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0) / 10.0
+    val plugged = (battery?.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0
+    val saver = if (power.isPowerSaveMode) "，省电模式" else ""
+    return "%s，%s，温控等级 %d，电池 %.1f°C%s%s".format(
+        place, if (power.isInteractive) "亮屏" else "熄屏", power.currentThermalStatus, temperature,
+        if (plugged) "，充电中" else "", saver,
+    )
+}
+
+/** A try of a model, kept here so it carries on (and its result stays) when the page is left. */
+data class TryState(val running: Boolean = false, val result: TryResult? = null, val error: String? = null)
+
 object Splitter {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val _tries = MutableStateFlow<Map<String, TryState>>(emptyMap())
+    val tries: StateFlow<Map<String, TryState>> = _tries
+
+    fun startTry(context: Context, model: LabelModel) {
+        if (_tries.value[model.id]?.running == true) return
+        _tries.value = _tries.value + (model.id to TryState(running = true))
+        scope.launch {
+            val state = try {
+                TryState(result = tryModel(context.applicationContext, model))
+            } catch (e: Throwable) {
+                TryState(error = AppLog.error("试 ${model.name}", e) + "（详情见「日志」页）")
+            }
+            _tries.value = _tries.value + (model.id to state)
+        }
+    }
+
+    fun clearTry(model: LabelModel) {
+        _tries.value = _tries.value - model.id
+    }
+
     private val _state = MutableStateFlow(SplitState())
     val state: StateFlow<SplitState> = _state
 
@@ -107,6 +151,7 @@ object Splitter {
                 coroutineContext.ensureActive()
                 _state.value = _state.value.copy(now = book.chapters[k], done = n)
                 val paragraphs = book.paragraphs(k)
+                val stateBefore = deviceState(context)
                 val before = llama.stats()
                 val start = System.nanoTime()
                 val working = LinkedHashMap(characters) // kept only if the chapter is finished
@@ -128,11 +173,18 @@ object Splitter {
                 characters = working
                 book.saveCharacters(characters)
                 _state.value = _state.value.copy(done = n + 1, charsPerSecond = chars / seconds)
+                val read = after.promptTokens - before.promptTokens
+                val wrote = after.answerTokens - before.answerTokens
+                val readSeconds = after.promptSeconds - before.promptSeconds
+                val writeSeconds = after.answerSeconds - before.answerSeconds
                 AppLog.info(
                     "拆分",
-                    "《%s》%s：%d 字，%.1f 秒，每秒 %.0f 字；读 %d 词元，写 %d 词元".format(
+                    ("《%s》%s：%d 字，%.1f 秒，每秒 %.0f 字\n" +
+                        "读 %d 词元 %.1f 秒（每秒 %.0f），写 %d 词元 %.1f 秒（每秒 %.1f），%d 线程\n" +
+                        "开始时：%s\n结束时：%s").format(
                         book.title, book.chapters[k], chars, seconds, chars / seconds,
-                        after.promptTokens - before.promptTokens, after.answerTokens - before.answerTokens,
+                        read, readSeconds, read / readSeconds, wrote, writeSeconds, wrote / writeSeconds, threads(context),
+                        stateBefore, deviceState(context),
                     ),
                 )
             }
@@ -168,9 +220,9 @@ object Splitter {
                 .joinToString("\n") { "${it.speaker}·${it.emotion}：${it.text}" }
             AppLog.info(
                 "试 ${model.name}",
-                "%.1f 秒；读 %d 词元 %.1f 秒，写 %d 词元 %.1f 秒%s".format(
+                "%.1f 秒；读 %d 词元 %.1f 秒，写 %d 词元 %.1f 秒，%d 线程；${deviceState(context)}%s".format(
                     seconds, after.promptTokens - before.promptTokens, after.promptSeconds - before.promptSeconds,
-                    after.answerTokens - before.answerTokens, after.answerSeconds - before.answerSeconds,
+                    after.answerTokens - before.answerTokens, after.answerSeconds - before.answerSeconds, threads(context),
                     warning?.let { "；$it" } ?: "",
                 ) + "\n" + answers,
             )
