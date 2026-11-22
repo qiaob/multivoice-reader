@@ -12,6 +12,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -86,7 +87,7 @@ fun App() {
                 title = {
                     Text(
                         when (place) {
-                            is Place.Home -> if (tab == 0) "多声朗读 · 书架" else "多声朗读 · 模型"
+                            is Place.Home -> "多声朗读 · " + listOf("书架", "模型", "日志")[tab]
                             is Place.OfBook -> io.github.qiaob.multivoice.data.Library.open(place.id)?.title ?: ""
                             is Place.OfChapter ->
                                 io.github.qiaob.multivoice.data.Library.open(place.id)?.chapters?.getOrNull(place.chapter) ?: ""
@@ -106,6 +107,7 @@ fun App() {
                 NavigationBar {
                     NavigationBarItem(tab == 0, { tab = 0 }, { Icon(Icons.Filled.MenuBook, null) }, label = { Text("书架") })
                     NavigationBarItem(tab == 1, { tab = 1 }, { Icon(Icons.Filled.Memory, null) }, label = { Text("模型") })
+                    NavigationBarItem(tab == 2, { tab = 2 }, { Icon(Icons.Filled.BugReport, null) }, label = { Text("日志") })
                 }
             }
         },
@@ -113,7 +115,11 @@ fun App() {
     ) { padding ->
         val modifier = Modifier.padding(padding)
         when (place) {
-            is Place.Home -> if (tab == 0) BooksScreen(modifier, snackbar) { go(Place.OfBook(it)) } else ModelsScreen(modifier)
+            is Place.Home -> when (tab) {
+                0 -> BooksScreen(modifier, snackbar) { go(Place.OfBook(it)) }
+                1 -> ModelsScreen(modifier)
+                else -> LogScreen(modifier, snackbar)
+            }
             is Place.OfBook -> BookScreen(place.id, modifier, snackbar, onChapter = { go(Place.OfChapter(place.id, it)) }, onGone = back)
             is Place.OfChapter -> ChapterScreen(place.id, place.chapter, modifier)
         }

@@ -60,6 +60,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import io.github.qiaob.multivoice.core.ScriptFormat
+import io.github.qiaob.multivoice.data.AppLog
 import io.github.qiaob.multivoice.data.Book
 import io.github.qiaob.multivoice.data.Library
 import io.github.qiaob.multivoice.data.Models
@@ -88,7 +89,7 @@ fun BooksScreen(modifier: Modifier, snackbar: SnackbarHostState, onBook: (String
                         Library.add(name, context.contentResolver.openInputStream(uri)!!.use { it.readBytes() })
                     }
                 } catch (e: Throwable) {
-                    snackbar.showSnackbar("导入 $name 失败：${describe(e)}")
+                    snackbar.showSnackbar("导入 $name 失败：${AppLog.error("导入 $name", e)}（详情见「日志」页）")
                 }
             }
             books = Library.all()
@@ -147,13 +148,13 @@ fun BookScreen(id: String, modifier: Modifier, snackbar: SnackbarHostState, onCh
                 }
                 snackbar.showSnackbar("已导出，电脑版的朗读页可以直接打开")
             } catch (e: Throwable) {
-                snackbar.showSnackbar("导出失败：${describe(e)}")
+                snackbar.showSnackbar("导出失败：${AppLog.error("导出《${book.title}》", e)}（详情见「日志」页）")
             }
         }
     }
     LaunchedEffect(split.error) {
         if (mine && split.error != null) {
-            snackbar.showSnackbar(split.error!!)
+            snackbar.showSnackbar(split.error!! + if (split.error == "已停止") "" else "（详情见「日志」页）")
             Splitter.clearError()
         }
     }
@@ -296,8 +297,3 @@ fun ChapterScreen(id: String, chapter: Int, modifier: Modifier) {
     }
 }
 
-/** An error in words, with what caused it: a bare class name tells the user nothing. */
-fun describe(e: Throwable): String {
-    val parts = generateSequence(e) { it.cause }.take(3).map { it.message ?: it.javaClass.simpleName }.distinct()
-    return parts.joinToString("：")
-}

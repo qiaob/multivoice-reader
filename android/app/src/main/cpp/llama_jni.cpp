@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -15,6 +16,19 @@
 #define LOG(...) __android_log_print(ANDROID_LOG_INFO, "mvr_llama", __VA_ARGS__)
 
 namespace {
+
+// What llama.cpp says while it works (loading, errors), kept so the app's log page can show it.
+std::mutex log_lock;
+std::string log_text;
+constexpr size_t LOG_KEEP = 48 * 1024;
+
+void on_log(ggml_log_level level, const char * text, void *) {
+    if (level == GGML_LOG_LEVEL_DEBUG) return;
+    __android_log_print(level == GGML_LOG_LEVEL_ERROR ? ANDROID_LOG_ERROR : ANDROID_LOG_INFO, "llama.cpp", "%s", text);
+    std::lock_guard<std::mutex> hold(log_lock);
+    log_text += text;
+    if (log_text.size() > LOG_KEEP) log_text.erase(0, log_text.size() - LOG_KEEP / 2);
+}
 
 struct Engine {
     llama_model * model = nullptr;
@@ -63,6 +77,7 @@ Java_io_github_qiaob_multivoice_llm_Llama_nativeLoad(
         JNIEnv * env, jclass, jstring model_path, jstring adapter_path, jint n_ctx, jint n_threads) {
     static bool started = false;
     if (!started) {
+        llama_log_set(on_log, nullptr);
         llama_backend_init();
         started = true;
     }
@@ -178,4 +193,10 @@ Java_io_github_qiaob_multivoice_llm_Llama_nativeStats(JNIEnv * env, jclass, jlon
     jlongArray out = env->NewLongArray(4);
     env->SetLongArrayRegion(out, 0, 4, values);
     return out;
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_io_github_qiaob_multivoice_llm_Llama_nativeLog(JNIEnv * env, jclass) {
+    std::lock_guard<std::mutex> hold(log_lock);
+    return utf8(env, log_text);
 }

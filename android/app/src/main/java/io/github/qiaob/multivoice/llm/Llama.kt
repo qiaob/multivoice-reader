@@ -42,5 +42,9 @@ class Llama private constructor(private var handle: Long) : LanguageModel, Close
         @JvmStatic private external fun nativeAsk(handle: Long, text: ByteArray, maxTokens: Int, tuned: Boolean): String
         @JvmStatic private external fun nativeStats(handle: Long): LongArray
         @JvmStatic private external fun nativeChatTemplate(handle: Long): String
+        @JvmStatic private external fun nativeLog(): String
+
+        /** What llama.cpp has said since the app started (loading, warnings, errors). */
+        fun log(): String = nativeLog()
     }
 }

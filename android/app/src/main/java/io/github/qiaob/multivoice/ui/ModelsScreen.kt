@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import io.github.qiaob.multivoice.core.ScriptFormat
+import io.github.qiaob.multivoice.data.AppLog
 import io.github.qiaob.multivoice.data.LabelModel
 import io.github.qiaob.multivoice.data.Models
 import io.github.qiaob.multivoice.work.Splitter
@@ -108,7 +109,7 @@ private fun ModelCard(model: LabelModel) {
             try {
                 withContext(Dispatchers.IO) { Models.import(context, model, uri) { importing = it } }
             } catch (e: Throwable) {
-                error = describe(e)
+                error = AppLog.error("导入 ${model.file}", e)
             }
             importing = null
             ready = Models.ready(context, model)
@@ -169,7 +170,7 @@ private fun ModelCard(model: LabelModel) {
                                 try {
                                     tried = withContext(Dispatchers.Default) { Splitter.tryModel(context, model) }
                                 } catch (e: Throwable) {
-                                    error = describe(e)
+                                    error = AppLog.error("试 ${model.name}", e) + "（详情见「日志」页）"
                                 }
                                 trying = false
                             }
@@ -237,9 +238,10 @@ private fun SelfCheckCard() {
                                 context.assets.open("golden/$name").use { it.readBytes().toString(Charsets.UTF_8) }
                             }
                         } catch (e: Throwable) {
-                            listOf(describe(e))
+                            listOf(AppLog.error("自检", e))
                         }
                     }
+                    AppLog.info("自检", result!!.ifEmpty { listOf("全部一致") }.joinToString("\n\n"))
                     running = false
                 }
             }) { Text(if (running) "正在对照…" else "开始自检") }

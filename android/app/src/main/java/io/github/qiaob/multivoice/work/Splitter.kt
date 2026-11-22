@@ -15,6 +15,7 @@ import io.github.qiaob.multivoice.core.LanguageModel
 import io.github.qiaob.multivoice.core.Line
 import io.github.qiaob.multivoice.core.Split
 import io.github.qiaob.multivoice.core.Text
+import io.github.qiaob.multivoice.data.AppLog
 import io.github.qiaob.multivoice.data.Book
 import io.github.qiaob.multivoice.data.ChapterResult
 import io.github.qiaob.multivoice.data.LabelModel
@@ -73,7 +74,9 @@ object Splitter {
         loaded?.let { (id, n, llama) -> if (id == model.id && n == threads) return llama else llama.close() }
         loaded = null
         if (!Models.ready(context, model)) throw IllegalStateException("${model.name} 的模型文件还没下载")
+        val start = System.nanoTime()
         val llama = Llama.load(Models.baseFile(context, model).path, Models.adapterFile(context, model).path, threads)
+        AppLog.info("加载模型", "%s，%d 线程，%.1f 秒".format(model.name, threads, (System.nanoTime() - start) / 1e9))
         loaded = Triple(model.id, threads, llama)
         return llama
     }
@@ -125,12 +128,19 @@ object Splitter {
                 characters = working
                 book.saveCharacters(characters)
                 _state.value = _state.value.copy(done = n + 1, charsPerSecond = chars / seconds)
+                AppLog.info(
+                    "拆分",
+                    "《%s》%s：%d 字，%.1f 秒，每秒 %.0f 字；读 %d 词元，写 %d 词元".format(
+                        book.title, book.chapters[k], chars, seconds, chars / seconds,
+                        after.promptTokens - before.promptTokens, after.answerTokens - before.answerTokens,
+                    ),
+                )
             }
             _state.value = _state.value.copy(running = false, now = "")
         } catch (e: CancellationException) {
             _state.value = _state.value.copy(running = false, now = "", error = "已停止")
         } catch (e: Throwable) {
-            _state.value = _state.value.copy(running = false, now = "", error = e.message ?: e.toString())
+            _state.value = _state.value.copy(running = false, now = "", error = AppLog.error("拆分《${book.title}》", e))
         } finally {
             release() // give the memory back while nothing is being split
         }
@@ -153,8 +163,19 @@ object Splitter {
             val split = Split.splitChapter(paragraphs, characters, Analyzer(llama))
             val seconds = (System.nanoTime() - start) / 1e9
             val after = llama.stats()
+            val lines = Split.script("试读", characters, listOf("夜雨" to split)).chapters.first().lines
+            val answers = lines.filter { it.speaker != io.github.qiaob.multivoice.core.ScriptFormat.NARRATOR }
+                .joinToString("\n") { "${it.speaker}·${it.emotion}：${it.text}" }
+            AppLog.info(
+                "试 ${model.name}",
+                "%.1f 秒；读 %d 词元 %.1f 秒，写 %d 词元 %.1f 秒%s".format(
+                    seconds, after.promptTokens - before.promptTokens, after.promptSeconds - before.promptSeconds,
+                    after.answerTokens - before.answerTokens, after.answerSeconds - before.answerSeconds,
+                    warning?.let { "；$it" } ?: "",
+                ) + "\n" + answers,
+            )
             TryResult(
-                Split.script("试读", characters, listOf("夜雨" to split)).chapters.first().lines,
+                lines,
                 seconds,
                 Llama.Stats(
                     after.promptTokens - before.promptTokens,
