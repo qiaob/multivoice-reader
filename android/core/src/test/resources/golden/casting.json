@@ -1,0 +1,840 @@
+{
+ "voices": [
+  {
+   "id": "f_boss",
+   "name": "干练女强人",
+   "gender": "女",
+   "age": "青年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "f_charming",
+   "name": "妩媚女子",
+   "gender": "女",
+   "age": "青年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "f_cold",
+   "name": "清冷女主",
+   "gender": "女",
+   "age": "青年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "f_elder",
+   "name": "慈祥老妇",
+   "gender": "女",
+   "age": "老年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "f_gentle",
+   "name": "温婉淑女",
+   "gender": "女",
+   "age": "青年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "f_girl",
+   "name": "小女孩",
+   "gender": "女",
+   "age": "儿童",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "f_lively",
+   "name": "活泼少女",
+   "gender": "女",
+   "age": "少年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "f_mature",
+   "name": "成熟御姐",
+   "gender": "女",
+   "age": "青年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "f_sharp",
+   "name": "泼辣妇人",
+   "gender": "女",
+   "age": "中年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "m_boy",
+   "name": "小男孩",
+   "gender": "男",
+   "age": "儿童",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "m_cold",
+   "name": "冷峻男主",
+   "gender": "男",
+   "age": "青年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "m_elder",
+   "name": "苍老长者",
+   "gender": "男",
+   "age": "老年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "m_honest",
+   "name": "憨厚老实人",
+   "gender": "男",
+   "age": "青年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "m_lord",
+   "name": "霸气上位者",
+   "gender": "男",
+   "age": "中年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "m_rough",
+   "name": "粗犷大汉",
+   "gender": "男",
+   "age": "青年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "m_scholar",
+   "name": "儒雅书生",
+   "gender": "男",
+   "age": "青年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "m_sly",
+   "name": "油滑小人",
+   "gender": "男",
+   "age": "青年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "m_villain",
+   "name": "阴狠反派",
+   "gender": "男",
+   "age": "中年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "m_youth",
+   "name": "少年主角",
+   "gender": "男",
+   "age": "少年",
+   "kind": "character",
+   "genre": ""
+  },
+  {
+   "id": "n_f_expressive",
+   "name": "知性女旁白",
+   "gender": "女",
+   "age": "青年",
+   "kind": "narrator",
+   "genre": ""
+  },
+  {
+   "id": "n_f_soft",
+   "name": "温柔女旁白",
+   "gender": "女",
+   "age": "青年",
+   "kind": "narrator",
+   "genre": ""
+  },
+  {
+   "id": "n_m_calm",
+   "name": "沉稳男旁白",
+   "gender": "男",
+   "age": "中年",
+   "kind": "narrator",
+   "genre": ""
+  },
+  {
+   "id": "n_m_passion",
+   "name": "激昂男旁白",
+   "gender": "男",
+   "age": "中年",
+   "kind": "narrator",
+   "genre": ""
+  },
+  {
+   "id": "n_m_sunny",
+   "name": "阳光男旁白",
+   "gender": "男",
+   "age": "青年",
+   "kind": "narrator",
+   "genre": ""
+  },
+  {
+   "id": "n_m_warm",
+   "name": "温暖男旁白",
+   "gender": "男",
+   "age": "青年",
+   "kind": "narrator",
+   "genre": ""
+  },
+  {
+   "id": "rom_f_lead",
+   "name": "柔和女主",
+   "gender": "女",
+   "age": "青年",
+   "kind": "character",
+   "genre": "romance"
+  },
+  {
+   "id": "rom_m_lead",
+   "name": "温柔男主",
+   "gender": "男",
+   "age": "青年",
+   "kind": "character",
+   "genre": "romance"
+  },
+  {
+   "id": "rom_n_f",
+   "name": "言情女旁白",
+   "gender": "女",
+   "age": "青年",
+   "kind": "narrator",
+   "genre": "romance"
+  },
+  {
+   "id": "sus_f_lead",
+   "name": "警觉女主",
+   "gender": "女",
+   "age": "青年",
+   "kind": "character",
+   "genre": "suspense"
+  },
+  {
+   "id": "sus_ghost",
+   "name": "幽冷女声",
+   "gender": "女",
+   "age": "青年",
+   "kind": "character",
+   "genre": "suspense"
+  },
+  {
+   "id": "sus_m_lead",
+   "name": "冷静男主",
+   "gender": "男",
+   "age": "青年",
+   "kind": "character",
+   "genre": "suspense"
+  },
+  {
+   "id": "sus_n_m",
+   "name": "悬疑男旁白",
+   "gender": "男",
+   "age": "中年",
+   "kind": "narrator",
+   "genre": "suspense"
+  },
+  {
+   "id": "sys_f_lead",
+   "name": "飒爽女主",
+   "gender": "女",
+   "age": "青年",
+   "kind": "character",
+   "genre": "system"
+  },
+  {
+   "id": "sys_m_lead",
+   "name": "张扬男主",
+   "gender": "男",
+   "age": "青年",
+   "kind": "character",
+   "genre": "system"
+  },
+  {
+   "id": "sys_n_m",
+   "name": "爽文男旁白",
+   "gender": "男",
+   "age": "青年",
+   "kind": "narrator",
+   "genre": "system"
+  },
+  {
+   "id": "sys_system",
+   "name": "系统提示音",
+   "gender": "女",
+   "age": "青年",
+   "kind": "system",
+   "genre": ""
+  },
+  {
+   "id": "mine",
+   "name": "我的",
+   "gender": "男",
+   "age": "青年",
+   "kind": "clone",
+   "genre": ""
+  }
+ ],
+ "characters": {
+  "王五": {
+   "gender": "未知",
+   "age": "少年"
+  },
+  "未知": {
+   "gender": "男",
+   "age": "中年"
+  },
+  "某个名字特别特别长的角色": {
+   "gender": "女",
+   "age": "未知"
+  },
+  "系统": {
+   "gender": "未知",
+   "age": "未知"
+  },
+  "张三": {
+   "gender": "未知",
+   "age": "少年"
+  },
+  "李四": {
+   "gender": "未知",
+   "age": "中年"
+  },
+  "路人0": {
+   "gender": "男",
+   "age": "儿童"
+  },
+  "路人1": {
+   "gender": "女",
+   "age": "少年"
+  },
+  "路人2": {
+   "gender": "未知",
+   "age": "青年"
+  },
+  "路人3": {
+   "gender": "男",
+   "age": "中年"
+  },
+  "路人4": {
+   "gender": "女",
+   "age": "老年"
+  },
+  "路人5": {
+   "gender": "未知",
+   "age": "未知"
+  },
+  "路人6": {
+   "gender": "男",
+   "age": "儿童"
+  },
+  "路人7": {
+   "gender": "女",
+   "age": "少年"
+  },
+  "路人8": {
+   "gender": "未知",
+   "age": "青年"
+  },
+  "路人9": {
+   "gender": "男",
+   "age": "中年"
+  },
+  "路人10": {
+   "gender": "女",
+   "age": "老年"
+  },
+  "路人11": {
+   "gender": "未知",
+   "age": "未知"
+  },
+  "路人12": {
+   "gender": "男",
+   "age": "儿童"
+  },
+  "路人13": {
+   "gender": "女",
+   "age": "少年"
+  },
+  "路人14": {
+   "gender": "未知",
+   "age": "青年"
+  },
+  "路人15": {
+   "gender": "男",
+   "age": "中年"
+  },
+  "路人16": {
+   "gender": "女",
+   "age": "老年"
+  },
+  "路人17": {
+   "gender": "未知",
+   "age": "未知"
+  },
+  "路人18": {
+   "gender": "男",
+   "age": "儿童"
+  },
+  "路人19": {
+   "gender": "女",
+   "age": "少年"
+  },
+  "路人20": {
+   "gender": "未知",
+   "age": "青年"
+  },
+  "路人21": {
+   "gender": "男",
+   "age": "中年"
+  },
+  "路人22": {
+   "gender": "女",
+   "age": "老年"
+  },
+  "路人23": {
+   "gender": "未知",
+   "age": "未知"
+  },
+  "路人24": {
+   "gender": "男",
+   "age": "儿童"
+  },
+  "路人25": {
+   "gender": "女",
+   "age": "少年"
+  },
+  "路人26": {
+   "gender": "未知",
+   "age": "青年"
+  },
+  "路人27": {
+   "gender": "男",
+   "age": "中年"
+  },
+  "路人28": {
+   "gender": "女",
+   "age": "老年"
+  },
+  "路人29": {
+   "gender": "未知",
+   "age": "未知"
+  },
+  "路人30": {
+   "gender": "男",
+   "age": "儿童"
+  },
+  "路人31": {
+   "gender": "女",
+   "age": "少年"
+  },
+  "路人32": {
+   "gender": "未知",
+   "age": "青年"
+  },
+  "路人33": {
+   "gender": "男",
+   "age": "中年"
+  },
+  "路人34": {
+   "gender": "女",
+   "age": "老年"
+  },
+  "路人35": {
+   "gender": "未知",
+   "age": "未知"
+  },
+  "路人36": {
+   "gender": "男",
+   "age": "儿童"
+  },
+  "路人37": {
+   "gender": "女",
+   "age": "少年"
+  },
+  "路人38": {
+   "gender": "未知",
+   "age": "青年"
+  },
+  "路人39": {
+   "gender": "男",
+   "age": "中年"
+  }
+ },
+ "cases": [
+  {
+   "genre": "",
+   "narrator": "n_m_passion",
+   "assigned": {
+    "王五": "f_lively",
+    "未知": "m_lord",
+    "某个名字特别特别长的角色": "f_boss",
+    "系统": "sys_system",
+    "张三": "m_youth",
+    "李四": "f_sharp",
+    "路人0": "m_boy",
+    "路人1": "f_charming",
+    "路人2": "f_cold",
+    "路人3": "m_villain",
+    "路人4": "f_elder",
+    "路人6": "m_cold",
+    "路人7": "f_gentle",
+    "路人8": "f_mature",
+    "路人9": "m_elder",
+    "路人10": "f_girl",
+    "路人12": "m_honest",
+    "路人13": "n_f_expressive",
+    "路人14": "m_rough",
+    "路人15": "m_scholar",
+    "路人16": "n_f_soft",
+    "路人18": "m_sly",
+    "路人19": "f_lively",
+    "路人20": "n_m_sunny",
+    "路人21": "n_m_calm",
+    "路人22": "f_elder",
+    "路人24": "n_m_warm",
+    "路人25": "f_boss",
+    "路人26": "f_charming",
+    "路人27": "m_lord",
+    "路人28": "f_sharp",
+    "路人30": "m_boy",
+    "路人31": "f_cold",
+    "路人32": "f_gentle",
+    "路人33": "m_villain",
+    "路人34": "f_mature",
+    "路人36": "m_youth",
+    "路人37": "f_girl",
+    "路人38": "m_cold",
+    "路人39": "m_elder"
+   },
+   "kept": {
+    "王五": "f_lively",
+    "未知": "m_lord",
+    "某个名字特别特别长的角色": "f_boss",
+    "系统": "sys_system",
+    "张三": "m_youth",
+    "李四": "f_sharp",
+    "路人0": "m_boy",
+    "路人1": "f_charming",
+    "路人2": "f_cold",
+    "路人3": "mine",
+    "路人4": "f_elder",
+    "路人6": "m_honest",
+    "路人7": "f_gentle",
+    "路人8": "f_mature",
+    "路人9": "m_villain",
+    "路人10": "f_girl",
+    "路人12": "m_rough",
+    "路人13": "n_f_expressive",
+    "路人14": "m_scholar",
+    "路人15": "m_elder",
+    "路人16": "n_f_soft",
+    "路人18": "m_sly",
+    "路人19": "f_lively",
+    "路人20": "n_m_sunny",
+    "路人21": "n_m_calm",
+    "路人22": "f_elder",
+    "路人24": "n_m_warm",
+    "路人25": "f_boss",
+    "路人26": "n_m_passion",
+    "路人27": "m_lord",
+    "路人28": "f_sharp",
+    "路人30": "m_boy",
+    "路人31": "f_charming",
+    "路人32": "f_cold",
+    "路人33": "m_villain",
+    "路人34": "f_gentle",
+    "路人36": "m_youth",
+    "路人37": "f_girl",
+    "路人38": "f_mature",
+    "路人39": "m_cold"
+   }
+  },
+  {
+   "genre": "suspense",
+   "narrator": "sus_n_m",
+   "assigned": {
+    "王五": "sus_f_lead",
+    "未知": "sus_m_lead",
+    "某个名字特别特别长的角色": "sus_ghost",
+    "系统": "sys_system",
+    "张三": "f_lively",
+    "李四": "f_sharp",
+    "路人0": "m_boy",
+    "路人1": "f_boss",
+    "路人2": "f_charming",
+    "路人3": "m_lord",
+    "路人4": "f_elder",
+    "路人6": "m_youth",
+    "路人7": "f_cold",
+    "路人8": "f_gentle",
+    "路人9": "m_villain",
+    "路人10": "f_mature",
+    "路人12": "m_cold",
+    "路人13": "f_girl",
+    "路人14": "m_honest",
+    "路人15": "m_elder",
+    "路人16": "n_f_expressive",
+    "路人18": "m_rough",
+    "路人19": "n_f_soft",
+    "路人20": "m_scholar",
+    "路人21": "m_sly",
+    "路人22": "f_elder",
+    "路人24": "n_m_sunny",
+    "路人25": "sus_f_lead",
+    "路人26": "n_m_warm",
+    "路人27": "n_m_calm",
+    "路人28": "f_sharp",
+    "路人30": "n_m_passion",
+    "路人31": "sus_ghost",
+    "路人32": "sus_m_lead",
+    "路人33": "sus_n_m",
+    "路人34": "f_boss",
+    "路人36": "m_boy",
+    "路人37": "f_lively",
+    "路人38": "f_charming",
+    "路人39": "m_lord"
+   },
+   "kept": {
+    "王五": "sus_f_lead",
+    "未知": "sus_m_lead",
+    "某个名字特别特别长的角色": "sus_ghost",
+    "系统": "sys_system",
+    "张三": "f_lively",
+    "李四": "sus_n_m",
+    "路人0": "m_boy",
+    "路人1": "f_boss",
+    "路人2": "f_charming",
+    "路人3": "mine",
+    "路人4": "f_elder",
+    "路人6": "m_youth",
+    "路人7": "f_cold",
+    "路人8": "f_gentle",
+    "路人9": "m_lord",
+    "路人10": "f_sharp",
+    "路人12": "m_honest",
+    "路人13": "f_girl",
+    "路人14": "f_mature",
+    "路人15": "m_villain",
+    "路人16": "n_f_expressive",
+    "路人18": "m_rough",
+    "路人19": "n_f_soft",
+    "路人20": "m_scholar",
+    "路人21": "m_elder",
+    "路人22": "f_elder",
+    "路人24": "m_sly",
+    "路人25": "sus_f_lead",
+    "路人26": "n_m_sunny",
+    "路人27": "n_m_calm",
+    "路人28": "f_sharp",
+    "路人30": "n_m_warm",
+    "路人31": "sus_ghost",
+    "路人32": "n_m_passion",
+    "路人33": "sus_m_lead",
+    "路人34": "f_boss",
+    "路人36": "m_boy",
+    "路人37": "f_lively",
+    "路人38": "sus_n_m",
+    "路人39": "m_lord"
+   }
+  },
+  {
+   "genre": "system",
+   "narrator": "sys_n_m",
+   "assigned": {
+    "王五": "sys_f_lead",
+    "未知": "sys_m_lead",
+    "某个名字特别特别长的角色": "f_boss",
+    "系统": "sys_system",
+    "张三": "f_lively",
+    "李四": "f_sharp",
+    "路人0": "m_boy",
+    "路人1": "f_charming",
+    "路人2": "f_cold",
+    "路人3": "m_lord",
+    "路人4": "f_elder",
+    "路人6": "m_youth",
+    "路人7": "f_gentle",
+    "路人8": "f_mature",
+    "路人9": "m_villain",
+    "路人10": "f_girl",
+    "路人12": "m_cold",
+    "路人13": "n_f_expressive",
+    "路人14": "m_honest",
+    "路人15": "m_elder",
+    "路人16": "n_f_soft",
+    "路人18": "m_rough",
+    "路人19": "sys_f_lead",
+    "路人20": "m_scholar",
+    "路人21": "m_sly",
+    "路人22": "f_elder",
+    "路人24": "n_m_sunny",
+    "路人25": "f_lively",
+    "路人26": "n_m_warm",
+    "路人27": "n_m_calm",
+    "路人28": "f_sharp",
+    "路人30": "n_m_passion",
+    "路人31": "f_boss",
+    "路人32": "sys_m_lead",
+    "路人33": "sys_n_m",
+    "路人34": "f_charming",
+    "路人36": "m_boy",
+    "路人37": "f_cold",
+    "路人38": "f_gentle",
+    "路人39": "m_lord"
+   },
+   "kept": {
+    "王五": "sys_f_lead",
+    "未知": "sys_m_lead",
+    "某个名字特别特别长的角色": "f_boss",
+    "系统": "sys_system",
+    "张三": "sys_n_m",
+    "李四": "f_sharp",
+    "路人0": "m_boy",
+    "路人1": "f_lively",
+    "路人2": "f_charming",
+    "路人3": "mine",
+    "路人4": "f_elder",
+    "路人6": "m_youth",
+    "路人7": "f_cold",
+    "路人8": "f_gentle",
+    "路人9": "m_lord",
+    "路人10": "f_mature",
+    "路人12": "m_honest",
+    "路人13": "f_girl",
+    "路人14": "m_rough",
+    "路人15": "m_villain",
+    "路人16": "n_f_expressive",
+    "路人18": "m_scholar",
+    "路人19": "n_f_soft",
+    "路人20": "m_sly",
+    "路人21": "m_elder",
+    "路人22": "f_elder",
+    "路人24": "n_m_sunny",
+    "路人25": "sys_f_lead",
+    "路人26": "n_m_warm",
+    "路人27": "n_m_calm",
+    "路人28": "f_sharp",
+    "路人30": "n_m_passion",
+    "路人31": "f_lively",
+    "路人32": "sys_m_lead",
+    "路人33": "sys_n_m",
+    "路人34": "f_boss",
+    "路人36": "m_boy",
+    "路人37": "f_charming",
+    "路人38": "f_cold",
+    "路人39": "m_lord"
+   }
+  },
+  {
+   "genre": "romance",
+   "narrator": "rom_n_f",
+   "assigned": {
+    "王五": "rom_f_lead",
+    "未知": "rom_m_lead",
+    "某个名字特别特别长的角色": "f_boss",
+    "系统": "sys_system",
+    "张三": "f_lively",
+    "李四": "f_sharp",
+    "路人0": "m_boy",
+    "路人1": "f_charming",
+    "路人2": "f_cold",
+    "路人3": "m_lord",
+    "路人4": "f_elder",
+    "路人6": "m_youth",
+    "路人7": "f_gentle",
+    "路人8": "f_mature",
+    "路人9": "m_villain",
+    "路人10": "f_girl",
+    "路人12": "m_cold",
+    "路人13": "n_f_expressive",
+    "路人14": "m_honest",
+    "路人15": "m_elder",
+    "路人16": "n_f_soft",
+    "路人18": "m_rough",
+    "路人19": "rom_f_lead",
+    "路人20": "m_scholar",
+    "路人21": "m_sly",
+    "路人22": "f_elder",
+    "路人24": "n_m_sunny",
+    "路人25": "rom_n_f",
+    "路人26": "n_m_warm",
+    "路人27": "n_m_calm",
+    "路人28": "f_sharp",
+    "路人30": "n_m_passion",
+    "路人31": "f_lively",
+    "路人32": "rom_m_lead",
+    "路人33": "m_lord",
+    "路人34": "f_boss",
+    "路人36": "m_boy",
+    "路人37": "f_charming",
+    "路人38": "f_cold",
+    "路人39": "m_villain"
+   },
+   "kept": {
+    "王五": "rom_f_lead",
+    "未知": "rom_m_lead",
+    "某个名字特别特别长的角色": "rom_n_f",
+    "系统": "sys_system",
+    "张三": "f_lively",
+    "李四": "f_sharp",
+    "路人0": "m_boy",
+    "路人1": "f_boss",
+    "路人2": "f_charming",
+    "路人3": "mine",
+    "路人4": "f_elder",
+    "路人6": "m_youth",
+    "路人7": "f_cold",
+    "路人8": "f_gentle",
+    "路人9": "m_lord",
+    "路人10": "f_mature",
+    "路人12": "m_honest",
+    "路人13": "f_girl",
+    "路人14": "m_rough",
+    "路人15": "m_villain",
+    "路人16": "n_f_expressive",
+    "路人18": "m_scholar",
+    "路人19": "n_f_soft",
+    "路人20": "m_sly",
+    "路人21": "m_elder",
+    "路人22": "f_elder",
+    "路人24": "n_m_sunny",
+    "路人25": "rom_f_lead",
+    "路人26": "n_m_warm",
+    "路人27": "n_m_calm",
+    "路人28": "f_sharp",
+    "路人30": "n_m_passion",
+    "路人31": "rom_n_f",
+    "路人32": "rom_m_lead",
+    "路人33": "m_lord",
+    "路人34": "f_boss",
+    "路人36": "m_boy",
+    "路人37": "f_lively",
+    "路人38": "f_charming",
+    "路人39": "m_villain"
+   }
+  }
+ ]
+}
