@@ -1,0 +1,12 @@
+/home/user/multivoice-reader/android/app/src/main/cpp/CMakeLists.txt
+/home/user/multivoice-reader/android/third_party/llama.cpp/CMakeLists.txt
+/home/user/multivoice-reader/android/third_party/llama.cpp/ggml/CMakeLists.txt
+/home/user/multivoice-reader/android/third_party/llama.cpp/ggml/src/CMakeLists.txt
+/home/user/multivoice-reader/android/third_party/llama.cpp/ggml/src/ggml-cpu/CMakeLists.txt
+/home/user/multivoice-reader/android/third_party/llama.cpp/src/CMakeLists.txt
+/home/user/multivoice-reader/android/third_party/llama.cpp/vendor/CMakeLists.txt
+/home/user/multivoice-reader/android/third_party/llama.cpp/vendor/hash/CMakeLists.txt
+/home/user/multivoice-reader/android/third_party/llama.cpp/vendor/miniaudio/CMakeLists.txt
+/home/user/multivoice-reader/android/third_party/llama.cpp/vendor/nlohmann/CMakeLists.txt
+/home/user/multivoice-reader/android/third_party/llama.cpp/vendor/sheredom/CMakeLists.txt
+/home/user/multivoice-reader/android/third_party/llama.cpp/vendor/stb/CMakeLists.txt

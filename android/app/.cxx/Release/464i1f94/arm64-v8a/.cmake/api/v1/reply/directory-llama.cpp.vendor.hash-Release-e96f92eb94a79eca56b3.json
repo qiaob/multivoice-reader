@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "llama.cpp/vendor/hash",
+		"source" : "/home/user/multivoice-reader/android/third_party/llama.cpp/vendor/hash"
+	}
+}

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- An open book with three sound waves: a book read in several voices. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M30,40 C38,36 46,36 53,40 L53,72 C46,68 38,68 30,72 Z M55,40 C62,36 70,36 78,40 L78,72 C70,68 62,68 55,72 Z" />
+    <path android:strokeColor="#FFD54F" android:strokeWidth="3" android:strokeLineCap="round"
+        android:pathData="M44,32 Q54,26 64,32" />
+    <path android:strokeColor="#FFD54F" android:strokeWidth="3" android:strokeLineCap="round"
+        android:pathData="M38,26 Q54,17 70,26" />
+</vector>
