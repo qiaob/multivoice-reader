@@ -37,7 +37,9 @@ object Text {
 
     private val SENTENCE = Regex("[^$SENTENCE_END]*[$SENTENCE_END]+[”」’』）)]*|[^$SENTENCE_END]+$")
     private val SPACES = Regex("[$S]+")
-    private val WORD = Regex("(?U)\\w")
+    // Python's \w on text: a letter, a digit or "_" in any script. Spelt out, because \w means
+    // ASCII only on the JVM and any script on Android, and the flag that widens it fails on Android.
+    private val WORD = Regex("[\\p{L}\\p{N}_]")
 
     // A paragraph that is nothing but 【…】 is the system speaking: 【叮！获得能力：仙师天眼】.
     private val SYSTEM_TEXT = Regex("(?:【[^【】]+】[$S]*)+")
@@ -200,8 +202,8 @@ object Text {
 
     private fun spellDigits(s: String): String = digitsOf(s).joinToString("") { DIGITS[it].toString() }
 
-    private val YEAR = Regex("(?U)(?<!\\d)(\\d{4})(?=年)")
-    private val NUMBER = Regex("(?U)(\\d+)(?:\\.(\\d+))?(%?)")
+    private val YEAR = Regex("(?<!\\p{Nd})(\\p{Nd}{4})(?=年)") // Python's \d: a digit in any script
+    private val NUMBER = Regex("(\\p{Nd}+)(?:\\.(\\p{Nd}+))?(%?)")
 
     /** Spell numbers out the way they are read aloud; speech models stumble on digits. */
     fun speakable(text: String): String {

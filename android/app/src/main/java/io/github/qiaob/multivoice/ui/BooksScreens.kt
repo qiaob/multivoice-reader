@@ -87,8 +87,8 @@ fun BooksScreen(modifier: Modifier, snackbar: SnackbarHostState, onBook: (String
                     withContext(Dispatchers.IO) {
                         Library.add(name, context.contentResolver.openInputStream(uri)!!.use { it.readBytes() })
                     }
-                } catch (e: Exception) {
-                    snackbar.showSnackbar(e.message ?: "导入失败")
+                } catch (e: Throwable) {
+                    snackbar.showSnackbar("导入 $name 失败：${describe(e)}")
                 }
             }
             books = Library.all()
@@ -146,8 +146,8 @@ fun BookScreen(id: String, modifier: Modifier, snackbar: SnackbarHostState, onCh
                     context.contentResolver.openOutputStream(uri)!!.use { it.write(text.toByteArray()) }
                 }
                 snackbar.showSnackbar("已导出，电脑版的朗读页可以直接打开")
-            } catch (e: Exception) {
-                snackbar.showSnackbar(e.message ?: "导出失败")
+            } catch (e: Throwable) {
+                snackbar.showSnackbar("导出失败：${describe(e)}")
             }
         }
     }
@@ -294,4 +294,10 @@ fun ChapterScreen(id: String, chapter: Int, modifier: Modifier) {
             )
         }
     }
+}
+
+/** An error in words, with what caused it: a bare class name tells the user nothing. */
+fun describe(e: Throwable): String {
+    val parts = generateSequence(e) { it.cause }.take(3).map { it.message ?: it.javaClass.simpleName }.distinct()
+    return parts.joinToString("：")
 }

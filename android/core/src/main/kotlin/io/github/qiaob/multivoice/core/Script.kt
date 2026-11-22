@@ -33,7 +33,7 @@ data class Profile(val gender: String = ScriptFormat.UNKNOWN, val age: String = 
 
 data class Script(val title: String, val characters: Map<String, Profile>, val chapters: List<ScriptChapter>) {
     companion object {
-        private val CHAPTER_RANGE = Regex("[${Py.SPACE}]*(\\d*)[${Py.SPACE}]*(-?)[${Py.SPACE}]*(\\d*)[${Py.SPACE}]*")
+        private val CHAPTER_RANGE = Regex("[${Py.SPACE}]*(\\p{Nd}*)[${Py.SPACE}]*(-?)[${Py.SPACE}]*(\\p{Nd}*)[${Py.SPACE}]*")
 
         /** Indices for "3", "3-8", "3-" or "-8" (chapters counted from 1). */
         fun chapterRange(spec: String, count: Int): IntRange {

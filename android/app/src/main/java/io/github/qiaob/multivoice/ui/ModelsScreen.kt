@@ -63,6 +63,7 @@ fun ModelsScreen(modifier: Modifier) {
             )
         }
         items(Models.ALL, key = { it.id }) { ModelCard(it) }
+        item { SelfCheckCard() }
         item {
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
@@ -106,8 +107,8 @@ private fun ModelCard(model: LabelModel) {
             importing = 0
             try {
                 withContext(Dispatchers.IO) { Models.import(context, model, uri) { importing = it } }
-            } catch (e: Exception) {
-                error = e.message
+            } catch (e: Throwable) {
+                error = describe(e)
             }
             importing = null
             ready = Models.ready(context, model)
@@ -168,7 +169,7 @@ private fun ModelCard(model: LabelModel) {
                                 try {
                                     tried = withContext(Dispatchers.Default) { Splitter.tryModel(context, model) }
                                 } catch (e: Throwable) {
-                                    error = e.message ?: e.toString()
+                                    error = describe(e)
                                 }
                                 trying = false
                             }
@@ -209,6 +210,46 @@ private fun TryCard(result: TryResult) {
                 },
                 style = MaterialTheme.typography.bodyMedium,
             )
+        }
+    }
+}
+
+/** Run the Python reader's results through this phone's code (core's SelfCheck). */
+@Composable
+private fun SelfCheckCard() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var running by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf<List<String>?>(null) }
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("自检", style = MaterialTheme.typography.titleSmall)
+            Text(
+                "拿电脑版处理过的 50 段小说对照：切章切句、数字读法、问模型的每一句提示、读回答、配声音，结果是否一字不差。不用模型，几秒钟。",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            OutlinedButton(enabled = !running, onClick = {
+                running = true
+                scope.launch {
+                    result = withContext(Dispatchers.Default) {
+                        try {
+                            io.github.qiaob.multivoice.core.SelfCheck.run { name ->
+                                context.assets.open("golden/$name").use { it.readBytes().toString(Charsets.UTF_8) }
+                            }
+                        } catch (e: Throwable) {
+                            listOf(describe(e))
+                        }
+                    }
+                    running = false
+                }
+            }) { Text(if (running) "正在对照…" else "开始自检") }
+            result?.let { failures ->
+                if (failures.isEmpty()) {
+                    Text("全部一致", color = MaterialTheme.colorScheme.primary)
+                } else {
+                    failures.forEach { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                }
+            }
         }
     }
 }

@@ -42,11 +42,18 @@ android {
         applicationId = "io.github.qiaob.multivoice"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.1.1"
         ndk { abiFilters += "arm64-v8a" }
         externalNativeBuild {
-            cmake { arguments += listOf("-DCMAKE_BUILD_TYPE=Release", "-DANDROID_STL=c++_static") }
+            cmake {
+                arguments += listOf(
+                    "-DCMAKE_BUILD_TYPE=Release",
+                    "-DANDROID_STL=c++_static",
+                    // Aligned for 16 KB memory pages, which newer Android phones use; 4 KB ones load it too.
+                    "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                )
+            }
         }
     }
 
@@ -64,6 +71,8 @@ android {
         }
     }
     sourceSets["main"].assets.srcDir(generatedAssets)
+    // The Python reader's results (assets/golden/), for the self-check on the phone.
+    sourceSets["main"].assets.srcDir("${rootDir}/core/src/test/resources")
     androidResources { noCompress += "gguf" }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
